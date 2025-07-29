@@ -30,7 +30,7 @@ defineProps<{
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 15px;
   z-index: 10000;
-  max-width: 500px;
+  max-width: 530px;
   pointer-events: none;
 }
 
