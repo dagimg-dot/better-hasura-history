@@ -35,6 +35,7 @@
         <li
           v-for="item in filteredHistory"
           :key="item.id"
+          @click="applyHistoryItem(item)"
           @mouseenter="handleMouseEnter($event, item)"
           @mouseleave="handleMouseLeave"
           @mousemove="handleMouseMove"
@@ -56,10 +57,45 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { isPaneOpen, history } from '../state'
+import { history, isPaneOpen } from '../state'
 import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
 import type { HistoryEntry } from '../types'
+
+const applyHistoryItem = (item: HistoryEntry) => {
+  const queryTextarea = document.querySelector('.query-editor textarea') as HTMLTextAreaElement
+  const variablesTextarea = document.querySelector(
+    '.variable-editor textarea',
+  ) as HTMLTextAreaElement
+
+  if (!queryTextarea || !variablesTextarea) {
+    console.error('Could not find one or both editor textareas.')
+    return
+  }
+
+  // Focus the operation editor first
+  queryTextarea.focus()
+  setTimeout(() => {
+    queryTextarea.select()
+    document.execCommand('insertText', false, item.operation)
+
+    // Then focus the variables editor
+    variablesTextarea.focus()
+    setTimeout(() => {
+      let finalVariables = item.variables || ''
+      if (finalVariables) {
+        try {
+          const parsed = JSON.parse(finalVariables)
+          finalVariables = JSON.stringify(parsed, null, 2)
+        } catch (e) {
+          console.error('Error parsing variables:', e)
+        }
+      }
+      variablesTextarea.select()
+      document.execCommand('insertText', false, finalVariables)
+    }, 50)
+  }, 0)
+}
 
 const operationPreviewRef = ref<any>(null)
 
