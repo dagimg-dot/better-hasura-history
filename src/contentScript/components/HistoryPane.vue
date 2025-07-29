@@ -3,30 +3,7 @@
     <div class="better-history-title-bar">
       <div class="better-history-title">Better History</div>
       <div>
-        <button class="better-history-close-button" @click="isPaneOpen = false">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
-            <path
-              d="M12 4L4 12"
-              stroke="#000000"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M4 4L12 12"
-              stroke="#000000"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+        <BetterHistoryCloseButton />
       </div>
     </div>
     <HistorySearch @update:searchTerm="updateSearchTerm" />
@@ -60,6 +37,7 @@ import { ref, computed, nextTick } from 'vue'
 import { history, isPaneOpen } from '../state'
 import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
+import BetterHistoryCloseButton from './BetterHistoryCloseButton.vue'
 import type { HistoryEntry } from '../types'
 
 const applyHistoryItem = async (item: HistoryEntry) => {
