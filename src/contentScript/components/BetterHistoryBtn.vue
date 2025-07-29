@@ -5,10 +5,10 @@
 </template>
 
 <script setup lang="ts">
-import { state } from '../state'
+import { isPaneOpen } from '../state'
 
 const togglePane = () => {
-  state.isPaneOpen = !state.isPaneOpen
+  isPaneOpen.value = !isPaneOpen.value
 }
 </script>
 

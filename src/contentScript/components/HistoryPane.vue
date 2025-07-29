@@ -1,9 +1,9 @@
 <template>
-  <div v-if="state.isPaneOpen" class="better-history-pane">
+  <div v-if="isPaneOpen" class="better-history-pane">
     <div class="better-history-title-bar">
       <div class="better-history-title">Better History</div>
       <div>
-        <button class="better-history-close-button" @click="state.isPaneOpen = false">
+        <button class="better-history-close-button" @click="isPaneOpen = false">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { state, history } from '../state'
+import { isPaneOpen, history } from '../state'
 import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
 import type { HistoryEntry } from '../types'
