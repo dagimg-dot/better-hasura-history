@@ -1,6 +1,8 @@
 import { createApp } from 'vue'
 import BetterHistory from './components/BetterHistoryBtn.vue'
 import HistoryPane from './components/HistoryPane.vue'
+import { parseCodeMirrorHtml } from './htmlParser'
+import { history } from './state'
 
 // Main function
 ;(async function () {
@@ -22,5 +24,20 @@ import HistoryPane from './components/HistoryPane.vue'
     const lastPosition = graphiqlContainer.children.length - 1
     graphiqlContainer.insertBefore(paneContainer, graphiqlContainer.children[lastPosition])
     createApp(HistoryPane).mount('#better-history-pane-container')
+  }
+
+  const executeButton = document.querySelector('.execute-button')
+
+  if (executeButton) {
+    executeButton.addEventListener('click', () => {
+      const parsed = parseCodeMirrorHtml()
+      if (parsed) {
+        history.value.unshift({
+          id: crypto.randomUUID(),
+          ...parsed,
+          createdAt: new Date().toISOString(),
+        })
+      }
+    })
   }
 })()

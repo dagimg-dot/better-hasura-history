@@ -23,6 +23,7 @@
     "zip": "npm run build && node src/zip.js"
   },
   "dependencies": {
+    "@vueuse/core": "^13.6.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {

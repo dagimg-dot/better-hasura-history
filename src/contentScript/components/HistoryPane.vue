@@ -29,35 +29,60 @@
         </button>
       </div>
     </div>
+    <HistorySearch @update:searchTerm="updateSearchTerm" />
+    <div class="history-list">
+      <ul>
+        <li v-for="item in filteredHistory" :key="item.id">
+          <div>{{ item.operation_name }}</div>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { state } from '../state'
+import { ref, computed } from 'vue'
+import { state, history } from '../state'
+import HistorySearch from './HistorySearch.vue'
+
+const searchTerm = ref('')
+
+const filteredHistory = computed(() => {
+  if (!searchTerm.value) {
+    return history.value
+  }
+  return history.value.filter((item) =>
+    item.operation_name.toLowerCase().includes(searchTerm.value.toLowerCase()),
+  )
+})
+
+const updateSearchTerm = (newVal: string) => {
+  searchTerm.value = newVal
+}
 </script>
 
 <style scoped>
 .better-history-pane {
   background: white;
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-width: 230px;
   z-index: 7;
-  padding: 6.3px;
-  border-bottom: 1px solid #e0e0e0;
+  height: 100%;
 }
 
 .better-history-title-bar {
   cursor: default;
   display: flex;
-  height: 34px;
   line-height: 14px;
-  padding: 8px 8px 3px;
+  padding: 15px 10px 16px 10px;
   position: relative;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .better-history-title {
@@ -70,5 +95,26 @@ import { state } from '../state'
   -ms-user-select: text;
   user-select: text;
   white-space: nowrap;
+}
+
+.history-list {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.history-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-list li {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.history-list li:hover {
+  background-color: #f5f5f5;
 }
 </style>
