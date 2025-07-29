@@ -115,6 +115,7 @@ const updateSearchTerm = (newVal: string) => {
 }
 
 .history-list li:hover {
-  background-color: #f5f5f5;
+  background-color: #e10098;
+  color: white;
 }
 </style>
