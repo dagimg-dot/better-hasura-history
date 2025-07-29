@@ -1,6 +1,4 @@
-import type { HistoryEntry } from './types'
-
-type ParsedQuery = Omit<HistoryEntry, 'id' | 'createdAt'>
+import type { ParsedQuery } from '../types'
 
 /**
  * Parse a CodeMirror HTML into a JSON-friendly structure.

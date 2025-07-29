@@ -16,3 +16,5 @@ export interface HistoryEntry {
   variables?: string
   createdAt: string
 }
+
+export type ParsedQuery = Omit<HistoryEntry, 'id' | 'createdAt'>

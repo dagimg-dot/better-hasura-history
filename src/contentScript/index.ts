@@ -1,41 +1,41 @@
 import { createApp } from 'vue'
 import BetterHistory from './components/BetterHistoryBtn.vue'
 import HistoryPane from './components/HistoryPane.vue'
-import { parseCodeMirrorHtml } from './htmlParser'
+import type { ParsedQuery } from './types'
 import { history } from './state'
+import { parseCodeMirrorHtml } from './utils/htmlParser'
+import { waitForElement } from './utils/waitForElement'
 
-/**
- * Waits for an element to appear in the DOM.
- * @param selector The CSS selector of the element.
- * @param timeout The maximum time to wait in milliseconds.
- * @returns A promise that resolves with the element, or null if it times out.
- */
-function waitForElement(selector: string, timeout = 15000): Promise<Element | null> {
-  return new Promise((resolve) => {
-    const el = document.querySelector(selector)
-    if (el) {
-      resolve(el)
-      return
+const checkForDuplicate = (parsed: ParsedQuery) => {
+  const { operation_name: baseName, operation, variables } = parsed
+
+  // Find all entries that are related to the base operation name.
+  const relatedEntries = history.value.filter(
+    (entry) => entry.operation_name === baseName || entry.operation_name.startsWith(baseName + '_'),
+  )
+
+  // Check if an identical operation already exists.
+  const isDuplicate = relatedEntries.some(
+    (entry) => entry.operation === operation && entry.variables === variables,
+  )
+
+  if (isDuplicate) {
+    return
+  }
+
+  // Determine the new name for the history entry.
+  let newName = baseName
+  const baseNameExists = relatedEntries.some((entry) => entry.operation_name === baseName)
+
+  if (baseNameExists) {
+    let suffix = 1
+    while (relatedEntries.some((entry) => entry.operation_name === `${baseName}_${suffix}`)) {
+      suffix++
     }
+    newName = `${baseName}_${suffix}`
+  }
 
-    const observer = new MutationObserver(() => {
-      const el = document.querySelector(selector)
-      if (el) {
-        observer.disconnect()
-        resolve(el)
-      }
-    })
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    })
-
-    setTimeout(() => {
-      observer.disconnect()
-      resolve(null)
-    }, timeout)
-  })
+  return { newName, operation, variables }
 }
 
 // Main function
@@ -60,16 +60,23 @@ function waitForElement(selector: string, timeout = 15000): Promise<Element | nu
   }
 
   const executeButton = await waitForElement('.execute-button')
+
   if (executeButton) {
     executeButton.addEventListener('click', () => {
       const parsed = parseCodeMirrorHtml()
-      if (parsed) {
-        history.value.unshift({
-          id: crypto.randomUUID(),
-          ...parsed,
-          createdAt: new Date().toISOString(),
-        })
-      }
+      if (!parsed) return
+
+      const newEntry = checkForDuplicate(parsed)
+
+      if (!newEntry) return
+
+      history.value.unshift({
+        id: crypto.randomUUID(),
+        operation_name: newEntry.newName,
+        operation: newEntry.operation,
+        variables: newEntry.variables,
+        createdAt: new Date().toISOString(),
+      })
     })
   }
 })()
