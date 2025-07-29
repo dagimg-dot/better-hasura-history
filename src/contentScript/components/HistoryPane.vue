@@ -32,18 +32,85 @@
     <HistorySearch @update:searchTerm="updateSearchTerm" />
     <div class="history-list">
       <ul>
-        <li v-for="item in filteredHistory" :key="item.id">
+        <li
+          v-for="item in filteredHistory"
+          :key="item.id"
+          @mouseenter="handleMouseEnter($event, item)"
+          @mouseleave="handleMouseLeave"
+          @mousemove="handleMouseMove"
+        >
           <div>{{ item.operation_name }}</div>
         </li>
       </ul>
     </div>
+    <OperationPreview
+      ref="operationPreviewRef"
+      v-if="tooltip.visible"
+      :operation="tooltip.operation"
+      :variables="tooltip.variables"
+      :x="tooltip.x"
+      :y="tooltip.y"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { state, history } from '../state'
 import HistorySearch from './HistorySearch.vue'
+import OperationPreview from './OperationPreview.vue'
+import type { HistoryEntry } from '../types'
+
+const operationPreviewRef = ref<any>(null)
+
+const tooltip = ref({
+  visible: false,
+  operation: '',
+  variables: '',
+  x: 0,
+  y: 0,
+})
+
+const updateTooltipPosition = (event: MouseEvent) => {
+  const tooltipEl = operationPreviewRef.value?.$el
+  if (!tooltipEl) return
+
+  const tooltipHeight = tooltipEl.offsetHeight
+  const windowHeight = window.innerHeight
+
+  let y = event.clientY + 15
+  if (y + tooltipHeight > windowHeight) {
+    y = event.clientY - tooltipHeight - 15
+  }
+  if (y < 0) {
+    y = 5
+  }
+
+  tooltip.value.x = event.clientX + 15
+  tooltip.value.y = y
+}
+
+const handleMouseEnter = async (event: MouseEvent, item: HistoryEntry) => {
+  if (event.ctrlKey || event.metaKey) {
+    tooltip.value.visible = true
+    tooltip.value.operation = item.operation
+    tooltip.value.variables = item.variables || ''
+
+    await nextTick()
+
+    updateTooltipPosition(event)
+  }
+}
+
+const handleMouseLeave = () => {
+  tooltip.value.visible = false
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (tooltip.value.visible) {
+    updateTooltipPosition(event)
+  }
+}
 
 const searchTerm = ref('')
 
