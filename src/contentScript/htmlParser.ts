@@ -32,7 +32,16 @@ function parseCodeMirrorHtml(): ParsedQuery | null {
   operation = operation.replace(/\u200B/g, '').trim()
   if (!operation) return null
 
-  const variables = (variablesEditor as HTMLElement).innerText.replace(/\u200B/g, '').trim()
+  const variableLines = Array.from(variablesEditor.querySelectorAll(':scope > div'))
+  let variables = ''
+  for (const line of variableLines) {
+    const lineText = (line.querySelector('pre.CodeMirror-line') as HTMLElement)?.innerText
+    if (lineText) {
+      variables += lineText + '\n'
+    }
+  }
+
+  variables = variables.replace(/\u200B/g, '').trim()
 
   return { operation, operation_name: operation_name || 'Unnamed Operation', variables }
 }
