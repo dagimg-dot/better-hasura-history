@@ -62,7 +62,7 @@ import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
 import type { HistoryEntry } from '../types'
 
-const applyHistoryItem = (item: HistoryEntry) => {
+const applyHistoryItem = async (item: HistoryEntry) => {
   const queryTextarea = document.querySelector('.query-editor textarea') as HTMLTextAreaElement
   const variablesTextarea = document.querySelector(
     '.variable-editor textarea',
@@ -73,28 +73,21 @@ const applyHistoryItem = (item: HistoryEntry) => {
     return
   }
 
-  // Focus the operation editor first
   queryTextarea.focus()
-  setTimeout(() => {
-    queryTextarea.select()
-    document.execCommand('insertText', false, item.operation)
+  document.execCommand('insertText', false, item.operation)
 
-    // Then focus the variables editor
-    variablesTextarea.focus()
-    setTimeout(() => {
-      let finalVariables = item.variables || ''
-      if (finalVariables) {
-        try {
-          const parsed = JSON.parse(finalVariables)
-          finalVariables = JSON.stringify(parsed, null, 2)
-        } catch (e) {
-          console.error('Error parsing variables:', e)
-        }
-      }
-      variablesTextarea.select()
-      document.execCommand('insertText', false, finalVariables)
-    }, 50)
-  }, 0)
+  variablesTextarea.focus()
+  let finalVariables = item.variables || ''
+  // TODO: Might enable is in the future
+  // if (finalVariables) {
+  //   try {
+  //     const parsed = JSON.parse(finalVariables)
+  //     finalVariables = JSON.stringify(parsed, null, 2)
+  //   } catch (e) {
+  //     console.error('Error parsing variables:', e)
+  //   }
+  // }
+  document.execCommand('insertText', false, finalVariables)
 }
 
 const operationPreviewRef = ref<any>(null)
