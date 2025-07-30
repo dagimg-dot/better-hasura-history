@@ -1,82 +1,27 @@
-import { createApp } from 'vue'
-import BetterHistory from './components/BetterHistoryBtn.vue'
-import HistoryPane from './components/HistoryPane.vue'
-import type { ParsedQuery } from './types'
-import { history } from './state'
-import { parseCodeMirrorHtml } from './utils/htmlParser'
 import { waitForElement } from './utils/waitForElement'
-
-const checkForDuplicate = (parsed: ParsedQuery) => {
-  const { operation_name: baseName, operation, variables } = parsed
-
-  // Find all entries that are related to the base operation name.
-  const relatedEntries = history.value.filter(
-    (entry) => entry.operation_name === baseName || entry.operation_name.startsWith(baseName + '_'),
-  )
-
-  // Check if an identical operation already exists.
-  const isDuplicate = relatedEntries.some(
-    (entry) => entry.operation === operation && entry.variables === variables,
-  )
-
-  if (isDuplicate) {
-    return
-  }
-
-  // Determine the new name for the history entry.
-  let newName = baseName
-  const baseNameExists = relatedEntries.some((entry) => entry.operation_name === baseName)
-
-  if (baseNameExists) {
-    let suffix = 1
-    while (relatedEntries.some((entry) => entry.operation_name === `${baseName}_${suffix}`)) {
-      suffix++
-    }
-    newName = `${baseName}_${suffix}`
-  }
-
-  return { newName, operation, variables }
-}
+import BetterHasuraHistory from './main'
+import { logger } from './utils/logger'
 
 // Main function
 ;(async function () {
-  console.log('contentScript is running')
+  try {
+    logger.info('Initializing Better Hasura History...')
+    const toolbar = await waitForElement('.toolbar')
+    const graphiqlContainer = await waitForElement('.graphiql-container')
+    const executeButton = await waitForElement('.execute-button')
 
-  const topBar = await waitForElement('.toolbar')
-  if (topBar) {
-    const buttonContainer = document.createElement('div')
-    buttonContainer.id = 'better-history-button-container'
-    topBar.insertBefore(buttonContainer, topBar.children[1])
-    createApp(BetterHistory).mount('#better-history-button-container')
-  }
+    if (!toolbar || !graphiqlContainer || !executeButton) {
+      logger.error('Could not find all required elements on the page. Aborting.')
+      return
+    }
 
-  const graphiqlContainer = await waitForElement('.graphiql-container')
-  if (graphiqlContainer) {
-    const paneContainer = document.createElement('div')
-    paneContainer.id = 'better-history-pane-container'
-    const lastPosition = graphiqlContainer.children.length - 1
-    graphiqlContainer.insertBefore(paneContainer, graphiqlContainer.children[lastPosition])
-    createApp(HistoryPane).mount('#better-history-pane-container')
-  }
+    logger.info('All required elements found. Initializing Better Hasura History...')
 
-  const executeButton = await waitForElement('.execute-button')
+    const betterHasuraHistory = new BetterHasuraHistory(toolbar, graphiqlContainer, executeButton)
+    betterHasuraHistory.init()
 
-  if (executeButton) {
-    executeButton.addEventListener('click', () => {
-      const parsed = parseCodeMirrorHtml()
-      if (!parsed) return
-
-      const newEntry = checkForDuplicate(parsed)
-
-      if (!newEntry) return
-
-      history.value.unshift({
-        id: crypto.randomUUID(),
-        operation_name: newEntry.newName,
-        operation: newEntry.operation,
-        variables: newEntry.variables,
-        createdAt: new Date().toISOString(),
-      })
-    })
+    logger.info('Better Hasura History initialized successfully.')
+  } catch (error) {
+    logger.error('Initialization failed.', error)
   }
 })()

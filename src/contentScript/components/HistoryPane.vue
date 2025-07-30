@@ -39,6 +39,7 @@ import OperationPreview from './OperationPreview.vue'
 import BetterHistoryCloseButton from './BetterHistoryCloseButton.vue'
 import HistoryItem from './HistoryItem.vue'
 import type { HistoryEntry } from '../types'
+import { logger } from '../utils/logger'
 
 const applyHistoryItem = async (item: HistoryEntry) => {
   const queryTextarea = document.querySelector('.query-editor textarea') as HTMLTextAreaElement
@@ -47,7 +48,7 @@ const applyHistoryItem = async (item: HistoryEntry) => {
   ) as HTMLTextAreaElement
 
   if (!queryTextarea || !variablesTextarea) {
-    console.error('Could not find one or both editor textareas.')
+    logger.error('Could not find one or both editor textareas.')
     return
   }
 
