@@ -31,12 +31,13 @@ export default defineManifest({
     {
       matches: ['*://*/console*'],
       js: ['src/contentScript/index.ts'],
+      all_frames: true,
     },
   ],
   web_accessible_resources: [
     {
-      resources: ['img/*'],
-      matches: ["<all_urls>"],
+      resources: ['img/*', 'src/contentScript/main-world.js'],
+      matches: ['<all_urls>'],
     },
   ],
   permissions: ['storage'],

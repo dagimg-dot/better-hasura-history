@@ -2,6 +2,12 @@ import { waitForElement } from './utils/waitForElement'
 import BetterHasuraHistory from './main'
 import { logger } from './utils/logger'
 
+// Inject the bridge script into the main page context
+const script = document.createElement('script')
+script.src = chrome.runtime.getURL('src/contentScript/main-world.js')
+script.type = 'module'
+;(document.head || document.documentElement).prepend(script)
+
 // Main function
 ;(async function () {
   try {

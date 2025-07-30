@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       outDir: 'build',
       rollupOptions: {
+        input: {
+          'main-world': 'src/contentScript/main-world.js',
+        },
         output: {
           chunkFileNames: 'assets/chunk-[hash].js',
         },

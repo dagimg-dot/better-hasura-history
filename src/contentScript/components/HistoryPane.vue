@@ -39,34 +39,18 @@ import OperationPreview from './OperationPreview.vue'
 import BetterHistoryCloseButton from './BetterHistoryCloseButton.vue'
 import HistoryItem from './HistoryItem.vue'
 import type { HistoryEntry } from '../types'
-import { logger } from '../utils/logger'
 
 const applyHistoryItem = async (item: HistoryEntry) => {
-  const queryTextarea = document.querySelector('.query-editor textarea') as HTMLTextAreaElement
-  const variablesTextarea = document.querySelector(
-    '.variable-editor textarea',
-  ) as HTMLTextAreaElement
-
-  if (!queryTextarea || !variablesTextarea) {
-    logger.error('Could not find one or both editor textareas.')
-    return
-  }
-
-  queryTextarea.focus()
-  document.execCommand('insertText', false, item.operation)
-
-  variablesTextarea.focus()
-  let finalVariables = item.variables || ''
-  // TODO: Might enable is in the future
-  // if (finalVariables) {
-  //   try {
-  //     const parsed = JSON.parse(finalVariables)
-  //     finalVariables = JSON.stringify(parsed, null, 2)
-  //   } catch (e) {
-  //     console.error('Error parsing variables:', e)
-  //   }
-  // }
-  document.execCommand('insertText', false, finalVariables)
+  window.postMessage(
+    {
+      type: 'BHH_APPLY_HISTORY_ITEM',
+      data: {
+        operation: item.operation,
+        variables: item.variables,
+      },
+    },
+    '*',
+  )
 }
 
 const operationPreviewRef = ref<any>(null)
