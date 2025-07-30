@@ -1,0 +1,57 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create a GitHub release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Get package name
+        id: package_name
+        run: echo "PACKAGE_NAME=$(jq -r .name package.json)" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP file
+        run: pnpm run zip
+        # This runs `vite build` and then `node src/zip.js`
+        # Assumes zip.js creates a file named after the package name from package.json
+
+      - name: Generate CRX file
+        id: crx
+        uses: cardinalby/webext-buildtools-chrome-crx-action@v2
+        with:
+          zipFilePath: ${{ steps.package_name.outputs.PACKAGE_NAME }}.zip
+          crxFilePath: ${{ steps.package_name.outputs.PACKAGE_NAME }}.crx
+          privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.package_name.outputs.PACKAGE_NAME }}.zip
+            ${{ steps.package_name.outputs.PACKAGE_NAME }}.crx
+          draft: false
+          generate_release_notes: true
