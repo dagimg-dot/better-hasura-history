@@ -33,6 +33,10 @@ jobs:
       - name: Get package name
         id: package_name
         run: echo "PACKAGE_NAME=$(jq -r .name package.json)" >> $GITHUB_OUTPUT
+      
+      - name: Get version
+        id: version
+        run: echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
 
       - name: Create ZIP file
         run: pnpm run zip
@@ -43,15 +47,15 @@ jobs:
         id: crx
         uses: cardinalby/webext-buildtools-chrome-crx-action@v2
         with:
-          zipFilePath: ${{ steps.package_name.outputs.PACKAGE_NAME }}.zip
-          crxFilePath: ${{ steps.package_name.outputs.PACKAGE_NAME }}.crx
+          zipFilePath: package/${{ steps.package_name.outputs.PACKAGE_NAME }}-${{ steps.version.outputs.VERSION }}.zip
+          crxFilePath: package/${{ steps.package_name.outputs.PACKAGE_NAME }}-${{ steps.version.outputs.VERSION }}.crx
           privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ steps.package_name.outputs.PACKAGE_NAME }}.zip
-            ${{ steps.package_name.outputs.PACKAGE_NAME }}.crx
+            package/${{ steps.package_name.outputs.PACKAGE_NAME }}-${{ steps.version.outputs.VERSION }}.zip
+            package/${{ steps.package_name.outputs.PACKAGE_NAME }}-${{ steps.version.outputs.VERSION }}.crx
           draft: false
           generate_release_notes: true
