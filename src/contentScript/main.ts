@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { App, createApp } from 'vue'
 import BetterHistory from './components/BetterHistoryBtn.vue'
 import HistoryPane from './components/HistoryPane.vue'
 import { parseCodeMirrorHtml } from './utils/htmlParser'
@@ -9,6 +9,9 @@ class BetterHasuraHistory {
   toolBar: Element
   graphiqlContainer: Element
   executeButton: Element
+  buttonApp: App | null = null
+  paneApp: App | null = null
+  originalHistoryButton: HTMLElement | null = null
 
   constructor(toolBar: Element, graphiqlContainer: Element, executeButton: Element) {
     this.toolBar = toolBar
@@ -16,11 +19,12 @@ class BetterHasuraHistory {
     this.executeButton = executeButton
   }
 
-  init() {
+  init(initialSettings: { showOriginalHistory: boolean }) {
     const buttonContainer = document.createElement('div')
     buttonContainer.id = 'better-history-button-container'
     this.toolBar.insertBefore(buttonContainer, this.toolBar.children[1])
-    createApp(BetterHistory).mount('#better-history-button-container')
+    this.buttonApp = createApp(BetterHistory)
+    this.buttonApp.mount('#better-history-button-container')
 
     const paneContainer = document.createElement('div')
     paneContainer.id = 'better-history-pane-container'
@@ -29,14 +33,47 @@ class BetterHasuraHistory {
       paneContainer,
       this.graphiqlContainer.children[lastPosition],
     )
-    createApp(HistoryPane).mount('#better-history-pane-container')
+    this.paneApp = createApp(HistoryPane)
+    this.paneApp.mount('#better-history-pane-container')
 
-    this.executeButton.addEventListener('click', () => {
-      const parsed = parseCodeMirrorHtml()
-      if (!parsed) return
+    this.executeButton.addEventListener('click', this.handleExecuteClick)
 
-      this.addNewHistoryEntry(parsed)
-    })
+    // Attempt to find the original history button.
+    this.originalHistoryButton = this.toolBar.querySelector('.toolbar-button[title="Show History"]')
+    this.toggleOriginalHistory(initialSettings.showOriginalHistory)
+  }
+
+  destroy() {
+    if (this.buttonApp) {
+      this.buttonApp.unmount()
+      document.getElementById('better-history-button-container')?.remove()
+      this.buttonApp = null
+    }
+
+    if (this.paneApp) {
+      this.paneApp.unmount()
+      document.getElementById('better-history-pane-container')?.remove()
+      this.paneApp = null
+    }
+
+    this.executeButton.removeEventListener('click', this.handleExecuteClick)
+
+    // Restore the original history button's visibility
+    this.toggleOriginalHistory(true)
+    this.originalHistoryButton = null
+  }
+
+  toggleOriginalHistory(visible: boolean) {
+    if (this.originalHistoryButton) {
+      this.originalHistoryButton.style.display = visible ? '' : 'none'
+    }
+  }
+
+  private handleExecuteClick = () => {
+    const parsed = parseCodeMirrorHtml()
+    if (!parsed) return
+
+    this.addNewHistoryEntry(parsed)
   }
 
   addNewHistoryEntry(parsed: ParsedQuery) {
