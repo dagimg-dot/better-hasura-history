@@ -8,9 +8,10 @@
   "license": "MIT",
   "keywords": [
     "chrome-extension",
-    "vue",
-    "vite",
-    "create-chrome-ext"
+    "hasura",
+    "history",
+    "graphql",
+    "graphiql"
   ],
   "engines": {
     "node": ">=20.0.0"
