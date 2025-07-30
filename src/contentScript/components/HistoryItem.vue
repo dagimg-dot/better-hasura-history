@@ -1,5 +1,6 @@
 <template>
   <li
+    :class="{ selected: selected }"
     @click="!isConfirmingDelete && $emit('select-item', item)"
     @mouseenter="$emit('show-preview', $event, item)"
     @mouseleave="handleMouseLeave"
@@ -86,6 +87,7 @@ import { history } from '../state'
 
 const props = defineProps<{
   item: HistoryEntry
+  selected: boolean
 }>()
 
 const emit = defineEmits<{
@@ -116,14 +118,23 @@ li {
   padding: 8px 10px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
+  transition: background-color 0.1s ease-in-out;
 }
 
 li:hover {
-  background-color: #e10098;
+  background-color: #f0f0f0;
+}
+
+li.selected {
+  background-color: #156c85; /* Primary color from your theme */
   color: white;
 }
 
-.item-content {
+/* When selected, hover should not change the color */
+li.selected:hover {
+  background-color: #156c85;
+}
+nr .item-content {
   flex-grow: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -142,13 +153,18 @@ li:hover {
   cursor: pointer;
   padding: 2px;
   margin-left: 4px;
-  color: white;
+  color: #888; /* A more visible default color */
   display: none; /* Hide actions by default */
   line-height: 1;
 }
 
 li:hover .action-button {
-  display: block; /* Show on li hover */
+  display: flex; /* Use flex to align SVG correctly */
+}
+
+li.selected .action-button {
+  display: flex;
+  color: white;
 }
 
 .confirmation-buttons {

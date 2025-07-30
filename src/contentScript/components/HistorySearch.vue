@@ -1,6 +1,11 @@
 <template>
   <div class="history-search-container">
-    <input type="text" placeholder="Search history..." v-model="searchTerm" />
+    <input
+      type="text"
+      placeholder="Search history..."
+      v-model="searchTerm"
+      @keydown="handleKeydown"
+    />
   </div>
 </template>
 
@@ -8,11 +13,24 @@
 import { ref, watch } from 'vue'
 
 const searchTerm = ref('')
-const emit = defineEmits(['update:searchTerm'])
+const emit = defineEmits(['update:searchTerm', 'navigate-down', 'navigate-up', 'select-entry'])
 
 watch(searchTerm, (newVal) => {
   emit('update:searchTerm', newVal)
 })
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    emit('navigate-down')
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    emit('navigate-up')
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    emit('select-entry')
+  }
+}
 </script>
 
 <style scoped>

@@ -6,13 +6,19 @@
         <BetterHistoryCloseButton />
       </div>
     </div>
-    <HistorySearch @update:searchTerm="updateSearchTerm" />
-    <div class="history-list">
+    <HistorySearch
+      @update:searchTerm="updateSearchTerm"
+      @navigate-down="handleKeyNavigation('down')"
+      @navigate-up="handleKeyNavigation('up')"
+      @select-entry="handleSelectEntry"
+    />
+    <div class="history-list" ref="historyListRef">
       <ul>
         <HistoryItem
-          v-for="item in filteredHistory"
+          v-for="(item, index) in filteredHistory"
           :key="item.id"
           :item="item"
+          :selected="index === selectedItemIndex"
           @select-item="applyHistoryItem"
           @show-preview="handleMouseEnter"
           @hide-preview="handleMouseLeave"
@@ -32,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { history, isPaneOpen } from '../state'
 import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
@@ -105,6 +111,8 @@ const handleMouseMove = (event: MouseEvent) => {
 }
 
 const searchTerm = ref('')
+const selectedItemIndex = ref(-1)
+const historyListRef = ref<HTMLDivElement | null>(null)
 
 const filteredHistory = computed(() => {
   if (!searchTerm.value) {
@@ -115,9 +123,49 @@ const filteredHistory = computed(() => {
   )
 })
 
+// Reset selection when search term changes
+watch(searchTerm, () => {
+  selectedItemIndex.value = -1
+})
+
 const updateSearchTerm = (newVal: string) => {
   searchTerm.value = newVal
 }
+
+const handleKeyNavigation = (direction: 'up' | 'down') => {
+  const list = filteredHistory.value
+  if (!list.length) return
+
+  let newIndex = selectedItemIndex.value
+  if (direction === 'down') {
+    newIndex = (newIndex + 1) % list.length
+  } else {
+    // 'up'
+    newIndex = (newIndex - 1 + list.length) % list.length
+  }
+  selectedItemIndex.value = newIndex
+}
+
+const handleSelectEntry = () => {
+  const list = filteredHistory.value
+  if (selectedItemIndex.value >= 0 && selectedItemIndex.value < list.length) {
+    applyHistoryItem(list[selectedItemIndex.value])
+  }
+}
+
+// Scroll the selected item into view
+watch(selectedItemIndex, async (newIndex) => {
+  if (newIndex < 0 || !historyListRef.value) return
+
+  await nextTick()
+  const selectedElement = historyListRef.value?.querySelector('li.selected')
+  if (selectedElement) {
+    selectedElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    })
+  }
+})
 </script>
 
 <style scoped>
