@@ -9,16 +9,15 @@
     <HistorySearch @update:searchTerm="updateSearchTerm" />
     <div class="history-list">
       <ul>
-        <li
+        <HistoryItem
           v-for="item in filteredHistory"
           :key="item.id"
-          @click="applyHistoryItem(item)"
-          @mouseenter="handleMouseEnter($event, item)"
-          @mouseleave="handleMouseLeave"
-          @mousemove="handleMouseMove"
-        >
-          <div>{{ item.operation_name }}</div>
-        </li>
+          :item="item"
+          @select-item="applyHistoryItem"
+          @show-preview="handleMouseEnter"
+          @hide-preview="handleMouseLeave"
+          @move-preview="handleMouseMove"
+        />
       </ul>
     </div>
     <OperationPreview
@@ -38,6 +37,7 @@ import { history, isPaneOpen } from '../state'
 import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
 import BetterHistoryCloseButton from './BetterHistoryCloseButton.vue'
+import HistoryItem from './HistoryItem.vue'
 import type { HistoryEntry } from '../types'
 
 const applyHistoryItem = async (item: HistoryEntry) => {
@@ -180,16 +180,5 @@ const updateSearchTerm = (newVal: string) => {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-.history-list li {
-  padding: 8px 10px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-
-.history-list li:hover {
-  background-color: #e10098;
-  color: white;
 }
 </style>
