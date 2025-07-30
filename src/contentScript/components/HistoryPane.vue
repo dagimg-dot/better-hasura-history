@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { history, isPaneOpen } from '../state'
 import HistorySearch from './HistorySearch.vue'
 import OperationPreview from './OperationPreview.vue'
@@ -166,6 +166,20 @@ watch(selectedItemIndex, async (newIndex) => {
     })
   }
 })
+
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && selectedItemIndex.value !== -1) {
+    selectedItemIndex.value = -1
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleEscapeKey)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleEscapeKey)
+})
 </script>
 
 <style scoped>
@@ -174,7 +188,7 @@ watch(selectedItemIndex, async (newIndex) => {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-width: 230px;
+  min-width: 250px;
   z-index: 7;
   height: 100%;
 }
