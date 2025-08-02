@@ -2,7 +2,6 @@
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/dagimg-dot/better-hasura-history) ![GitHub all releases](https://img.shields.io/github/downloads/dagimg-dot/better-hasura-history/total)
 
-
 <div style="display: flex; justify-content: center;">
   <img src="./assets/better-hasura-history.png" alt="Better Hasura History" width="250" />
 </div>
@@ -19,7 +18,6 @@
 - [x] Delete history item with confirmation
 - [x] Enable/Disable the extension from the popup
 - [x] Remove original History button from the graphiql section
-
 
 ## Installing
 
@@ -50,7 +48,6 @@ git clone https://github.com/dagimg-dot/better-hasura-history.git
 ```shell
 cd better-hasura-history
 ```
-
 
 ```shell
 pnpm install

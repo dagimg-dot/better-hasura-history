@@ -1,126 +1,154 @@
-import { App, createApp } from 'vue'
-import BetterHistory from './components/BetterHistoryBtn.vue'
-import HistoryPane from './components/HistoryPane.vue'
 import { parseCodeMirrorHtml } from './utils/htmlParser'
-import { ParsedQuery } from './types'
-import { history } from './state'
+import { logger } from './utils/logger'
+import { DOMManager, VueAppManager, HistoryService } from './services'
 
-class BetterHasuraHistory {
-  toolBar: Element
+/**
+ * Required DOM elements for the extension to function.
+ */
+interface RequiredElements {
+  toolbar: Element
   graphiqlContainer: Element
   executeButton: Element
-  buttonApp: App | null = null
-  paneApp: App | null = null
-  originalHistoryButton: HTMLElement | null = null
+}
 
-  constructor(toolBar: Element, graphiqlContainer: Element, executeButton: Element) {
-    this.toolBar = toolBar
-    this.graphiqlContainer = graphiqlContainer
-    this.executeButton = executeButton
+/**
+ * Main class for the Better Hasura History extension.
+ */
+class BetterHasuraHistory {
+  private domManager: DOMManager
+  private vueAppManager = new VueAppManager()
+  private originalHistoryButton: HTMLElement | null = null
+  private isInitialized = false
+
+  constructor(elements: RequiredElements) {
+    this.domManager = new DOMManager(elements.toolbar, elements.graphiqlContainer)
+
+    this.handleExecuteClick = this.handleExecuteClick.bind(this)
+
+    elements.executeButton.addEventListener('click', this.handleExecuteClick)
   }
 
-  init(initialSettings: { showOriginalHistory: boolean }) {
-    const buttonContainer = document.createElement('div')
-    buttonContainer.id = 'better-history-button-container'
-    this.toolBar.insertBefore(buttonContainer, this.toolBar.children[1])
-    this.buttonApp = createApp(BetterHistory)
-    this.buttonApp.mount('#better-history-button-container')
-
-    const paneContainer = document.createElement('div')
-    paneContainer.id = 'better-history-pane-container'
-    const lastPosition = this.graphiqlContainer.children.length - 1
-    this.graphiqlContainer.insertBefore(
-      paneContainer,
-      this.graphiqlContainer.children[lastPosition],
-    )
-    this.paneApp = createApp(HistoryPane)
-    this.paneApp.mount('#better-history-pane-container')
-
-    this.executeButton.addEventListener('click', this.handleExecuteClick)
-
-    // Attempt to find the original history button.
-    this.originalHistoryButton = this.toolBar.querySelector('.toolbar-button[title="Show History"]')
-    this.toggleOriginalHistory(initialSettings.showOriginalHistory)
-  }
-
-  destroy() {
-    if (this.buttonApp) {
-      this.buttonApp.unmount()
-      document.getElementById('better-history-button-container')?.remove()
-      this.buttonApp = null
-    }
-
-    if (this.paneApp) {
-      this.paneApp.unmount()
-      document.getElementById('better-history-pane-container')?.remove()
-      this.paneApp = null
-    }
-
-    this.executeButton.removeEventListener('click', this.handleExecuteClick)
-
-    // Restore the original history button's visibility
-    this.toggleOriginalHistory(true)
-    this.originalHistoryButton = null
-  }
-
-  toggleOriginalHistory(visible: boolean) {
-    if (this.originalHistoryButton) {
-      this.originalHistoryButton.style.display = visible ? '' : 'none'
-    }
-  }
-
-  private handleExecuteClick = () => {
-    const parsed = parseCodeMirrorHtml()
-    if (!parsed) return
-
-    this.addNewHistoryEntry(parsed)
-  }
-
-  addNewHistoryEntry(parsed: ParsedQuery) {
-    const newEntry = this.prepareNewHistoryEntry(parsed)
-
-    if (!newEntry) return
-
-    history.value.unshift({
-      id: crypto.randomUUID(),
-      operation_name: newEntry.newName,
-      operation: newEntry.operation,
-      variables: newEntry.variables,
-      createdAt: new Date().toISOString(),
-    })
-  }
-
-  prepareNewHistoryEntry(parsed: ParsedQuery) {
-    const { operation_name: baseName, operation, variables } = parsed
-
-    // Find all entries that are related to the base operation name.
-    const relatedEntries = history.value.filter(
-      (entry) =>
-        entry.operation_name === baseName || entry.operation_name.startsWith(baseName + '_'),
-    )
-
-    // Check if an identical operation already exists.
-    const isDuplicate = relatedEntries.some(
-      (entry) => entry.operation === operation && entry.variables === variables,
-    )
-
-    if (isDuplicate) {
+  /**
+   * Initialize the Better Hasura History extension.
+   * @param initialSettings - The initial settings for the extension.
+   */
+  async init(initialSettings: { showOriginalHistory: boolean }): Promise<void> {
+    if (this.isInitialized) {
+      logger.warn('Extension already initialized')
       return
     }
 
-    // Determine the new name for the history entry.
-    const existingNames = new Set(relatedEntries.map((entry) => entry.operation_name))
-    let newName = baseName
+    try {
+      logger.info('Initializing Better Hasura History extension...')
 
-    if (existingNames.has(baseName)) {
-      let suffix = 1
-      while (existingNames.has(`${baseName}_${suffix}`)) {
-        suffix++
-      }
-      newName = `${baseName}_${suffix}`
+      const buttonContainer = this.domManager.createButtonContainer()
+      const paneContainer = this.domManager.createPaneContainer()
+
+      this.vueAppManager.initializeApps(buttonContainer, paneContainer)
+
+      this.originalHistoryButton = this.domManager.findOriginalHistoryButton()
+      this.toggleOriginalHistory(initialSettings.showOriginalHistory)
+
+      this.isInitialized = true
+      logger.info('Extension initialization completed successfully')
+    } catch (error) {
+      logger.error('Extension initialization failed', error)
+      this.cleanup()
+      throw error
+    }
+  }
+
+  /**
+   * Destroy the Better Hasura History extension.
+   */
+  destroy(): void {
+    if (!this.isInitialized) {
+      logger.warn('Extension not initialized - nothing to destroy')
+      return
     }
 
-    return { newName, operation, variables }
+    try {
+      logger.info('Destroying Better Hasura History extension...')
+
+      this.vueAppManager.cleanup()
+
+      this.domManager.cleanup()
+
+      // Restore original history button visibility
+      this.toggleOriginalHistory(true)
+      this.originalHistoryButton = null
+
+      this.isInitialized = false
+      logger.info('Extension destruction completed successfully')
+    } catch (error) {
+      logger.error('Error during extension destruction', error)
+      // Force cleanup even if there were errors
+      this.cleanup()
+    }
+  }
+
+  /**
+   * Force cleanup of resources (used internally).
+   */
+  private cleanup(): void {
+    this.vueAppManager.cleanup()
+    this.domManager.cleanup()
+    this.originalHistoryButton = null
+    this.isInitialized = false
+  }
+
+  /**
+   * Toggle the visibility of the original history button.
+   * @param visible - Whether to show the original history button.
+   */
+  toggleOriginalHistory(visible: boolean): void {
+    if (this.originalHistoryButton) {
+      this.originalHistoryButton.style.display = visible ? '' : 'none'
+      logger.info(`Original history button visibility: ${visible ? 'shown' : 'hidden'}`)
+    } else {
+      logger.warn('Original history button not found - cannot toggle visibility')
+    }
+  }
+
+  /**
+   * Handle the click event of the execute button.
+   */
+  private handleExecuteClick(): void {
+    try {
+      const parsed = parseCodeMirrorHtml()
+      if (!parsed) {
+        logger.warn('Failed to parse query from CodeMirror')
+        return
+      }
+
+      const entry = HistoryService.addEntry(parsed)
+      if (entry) {
+        logger.info(`New history entry added: ${entry.operation_name}`)
+      }
+    } catch (error) {
+      logger.error('Error handling execute click', error)
+    }
+  }
+
+  /**
+   * Get the initialization status of the extension.
+   */
+  get initialized(): boolean {
+    return this.isInitialized
+  }
+
+  /**
+   * Get the DOM manager instance (for testing purposes).
+   */
+  get domManagerInstance(): DOMManager {
+    return this.domManager
+  }
+
+  /**
+   * Get the Vue app manager instance (for testing purposes).
+   */
+  get vueAppManagerInstance(): VueAppManager {
+    return this.vueAppManager
   }
 }
 

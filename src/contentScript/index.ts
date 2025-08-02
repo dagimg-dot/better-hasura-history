@@ -1,6 +1,5 @@
-import { waitForElement } from './utils/waitForElement'
-import BetterHasuraHistory from './main'
 import { logger } from './utils/logger'
+import { ExtensionLifecycleManager, SettingsManager } from './services'
 
 // Inject the bridge script into the main page context
 const script = document.createElement('script')
@@ -8,84 +7,59 @@ script.src = chrome.runtime.getURL('src/contentScript/main-world.js')
 script.type = 'module'
 ;(document.head || document.documentElement).prepend(script)
 
-// --- Better Hasura History Lifecycle Management ---
+// Single instance of the lifecycle manager
+const lifecycleManager = new ExtensionLifecycleManager()
 
-let bhhInstance: BetterHasuraHistory | null = null
-
-const defaultSettings = {
-  extensionEnabled: true,
-  showOriginalHistory: false,
+/**
+ * Initialize the extension with the provided settings.
+ */
+async function initialize(
+  settings?: ReturnType<typeof SettingsManager.mergeSettings>,
+): Promise<void> {
+  try {
+    await lifecycleManager.initialize(settings)
+  } catch (error) {
+    logger.error('Failed to initialize extension', error)
+  }
 }
 
-async function initialize(settings: typeof defaultSettings) {
-  if (bhhInstance) {
-    logger.info('Better Hasura History is already initialized.')
+/**
+ * Destroy the extension instance.
+ */
+function destroy(): void {
+  lifecycleManager.cleanup()
+}
+
+// Initial load: Read settings and initialize if enabled.
+SettingsManager.getSettings()
+  .then((settings) => {
+    if (settings.extensionEnabled) {
+      logger.info('Extension enabled on startup - initializing...')
+      initialize(settings)
+    } else {
+      logger.info('Extension disabled on startup - skipping initialization')
+    }
+  })
+  .catch((error) => {
+    logger.error('Failed to load initial settings', error)
+  })
+
+// Listen for changes from the popup.
+chrome.storage.onChanged.addListener(async (changes, namespace) => {
+  if (namespace !== 'local' || !changes.settings) {
     return
   }
 
   try {
-    logger.info('Initializing Better Hasura History...')
-    const toolbar = await waitForElement('.toolbar')
-    const graphiqlContainer = await waitForElement('.graphiql-container')
-    const executeButton = await waitForElement('.execute-button')
+    const { oldValue, newValue } = changes.settings
+    const oldSettings = SettingsManager.mergeSettings(oldValue)
+    const newSettings = SettingsManager.mergeSettings(newValue)
 
-    if (!toolbar || !graphiqlContainer || !executeButton) {
-      logger.error('Could not find all required elements on the page. Aborting.')
-      return
-    }
+    logger.info('Settings changed:', { oldSettings, newSettings })
 
-    logger.info('All required elements found. Initializing Better Hasura History...')
-    bhhInstance = new BetterHasuraHistory(toolbar, graphiqlContainer, executeButton)
-    bhhInstance.init({ showOriginalHistory: settings.showOriginalHistory })
-
-    logger.info('Better Hasura History initialized successfully.')
+    // Delegate settings change handling to the lifecycle manager
+    await lifecycleManager.handleSettingsChange(oldValue, newValue)
   } catch (error) {
-    logger.error('Initialization failed.', error)
-    if (bhhInstance) {
-      bhhInstance.destroy()
-      bhhInstance = null
-    }
-  }
-}
-
-function destroy() {
-  if (bhhInstance) {
-    logger.info('Destroying Better Hasura History instance.')
-    bhhInstance.destroy()
-    bhhInstance = null
-  }
-}
-
-// Initial load: Read settings and initialize if enabled.
-chrome.storage.local.get(['settings'], (result) => {
-  const settings = { ...defaultSettings, ...result.settings }
-  if (settings.extensionEnabled) {
-    initialize(settings)
-  }
-})
-
-// Listen for changes from the popup.
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace !== 'local' || !changes.settings) return
-
-  const { oldValue, newValue } = changes.settings
-  const oldSettings = { ...defaultSettings, ...oldValue }
-  const newSettings = { ...defaultSettings, ...newValue }
-
-  // Handle toggling the entire extension on/off
-  if (oldSettings.extensionEnabled !== newSettings.extensionEnabled) {
-    if (newSettings.extensionEnabled) {
-      logger.info('Extension enabled. Initializing...')
-      initialize(newSettings)
-    } else {
-      logger.info('Extension disabled. Destroying...')
-      destroy()
-    }
-  }
-
-  // Handle toggling the original history button visibility
-  if (bhhInstance && oldSettings.showOriginalHistory !== newSettings.showOriginalHistory) {
-    logger.info(`Toggling original history visibility to: ${newSettings.showOriginalHistory}`)
-    bhhInstance.toggleOriginalHistory(newSettings.showOriginalHistory)
+    logger.error('Error handling settings change', error)
   }
 })
