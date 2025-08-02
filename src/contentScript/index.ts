@@ -1,5 +1,5 @@
 import { logger } from './utils/logger'
-import { ExtensionLifecycleManager, SettingsManager } from './services'
+import { ExtensionLifecycleManager, SettingsManager, NavigationManager } from './services'
 
 // Inject the bridge script into the main page context
 const script = document.createElement('script')
@@ -7,44 +7,50 @@ script.src = chrome.runtime.getURL('src/contentScript/main-world.js')
 script.type = 'module'
 ;(document.head || document.documentElement).prepend(script)
 
-// Single instance of the lifecycle manager
+// --- Better Hasura History Lifecycle Management ---
+
 const lifecycleManager = new ExtensionLifecycleManager()
 
 /**
- * Initialize the extension with the provided settings.
+ * Initialize the navigation manager to handle SPA page changes.
  */
-async function initialize(
-  settings?: ReturnType<typeof SettingsManager.mergeSettings>,
-): Promise<void> {
-  try {
-    await lifecycleManager.initialize(settings)
-  } catch (error) {
-    logger.error('Failed to initialize extension', error)
-  }
+function initializeNavigation(): void {
+  logger.info('Initializing navigation manager to handle SPA lifecycle...')
+
+  const navigationManager = new NavigationManager(
+    document.body,
+    () => {
+      // Initialize the extension when the API explorer becomes visible
+      SettingsManager.getSettings().then((settings) => {
+        if (settings.extensionEnabled) {
+          logger.info('API Explorer detected - initializing extension...')
+          lifecycleManager.initialize(settings).catch((error) => {
+            logger.error('Failed to initialize extension on navigation', error)
+          })
+        } else {
+          logger.info('Extension is disabled, skipping initialization.')
+        }
+      })
+    },
+    () => {
+      // Clean up the extension when the API explorer is no longer visible
+      logger.info('API Explorer hidden - cleaning up extension...')
+      lifecycleManager.cleanup()
+    },
+  )
+
+  navigationManager.start()
+  logger.info('Navigation manager started.')
 }
 
-/**
- * Destroy the extension instance.
- */
-function destroy(): void {
-  lifecycleManager.cleanup()
+// Start the lifecycle management
+try {
+  initializeNavigation()
+} catch (error) {
+  logger.error('Failed to start navigation manager', error)
 }
 
-// Initial load: Read settings and initialize if enabled.
-SettingsManager.getSettings()
-  .then((settings) => {
-    if (settings.extensionEnabled) {
-      logger.info('Extension enabled on startup - initializing...')
-      initialize(settings)
-    } else {
-      logger.info('Extension disabled on startup - skipping initialization')
-    }
-  })
-  .catch((error) => {
-    logger.error('Failed to load initial settings', error)
-  })
-
-// Listen for changes from the popup.
+// Listen for settings changes (e.g., enabling/disabling the extension).
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
   if (namespace !== 'local' || !changes.settings) {
     return
@@ -52,13 +58,8 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
   try {
     const { oldValue, newValue } = changes.settings
-    const oldSettings = SettingsManager.mergeSettings(oldValue)
-    const newSettings = SettingsManager.mergeSettings(newValue)
-
-    logger.info('Settings changed:', { oldSettings, newSettings })
-
-    // Delegate settings change handling to the lifecycle manager
     await lifecycleManager.handleSettingsChange(oldValue, newValue)
+    logger.info('Settings change handled successfully.')
   } catch (error) {
     logger.error('Error handling settings change', error)
   }
