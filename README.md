@@ -35,6 +35,13 @@
 5. Enable Developer mode (switch in the top right corner)
 6. Use the "Load unpacked" button to select the extracted extension folder
 
+### Build from source
+
+1. Clone the repository
+2. Run `pnpm install` to install the dependencies
+4. Run `pnpm pack` to pack the extension
+5. The packed extension will be in the `dist` folder, both the crx and zip file
+
 ## Developing
 
 1. Clone the repository

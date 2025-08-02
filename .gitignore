@@ -9,6 +9,7 @@
 # production
 /build
 /package
+/dist
 
 # misc
 .DS_Store
@@ -24,3 +25,7 @@ secrets.*.js
 
 # env
 .env
+
+# crx3
+bhh_public.pem
+bhh_private.pem

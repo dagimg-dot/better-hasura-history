@@ -21,7 +21,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "fmt": "prettier --write '**/*.{vue,ts,json,css,scss,md}'",
-    "zip": "npm run build && node src/zip.js",
+    "generate:key": "openssl genrsa -out bhh_private.pem 2048 && openssl rsa -in bhh_private.pem -pubout -out bhh_public.pem",
+    "pack": "pnpm build && pnpm generate:key && mkdir -p dist && crx3 build -p bhh_private.pem --appVersion $(node -p \"require('./package.json').version\") -o dist/better-hasura-history-$(node -p \"require('./package.json').version\").crx -z dist/better-hasura-history-$(node -p \"require('./package.json').version\").zip",
     "bump-version": "node scripts/bump-version.js"
   },
   "dependencies": {
@@ -32,6 +33,7 @@
     "@crxjs/vite-plugin": "^2.0.3",
     "@types/chrome": "^0.0.246",
     "@vitejs/plugin-vue": "^5.0.5",
+    "crx3": "^1.1.3",
     "gulp": "^5.0.0",
     "gulp-zip": "^6.0.0",
     "prettier": "^3.0.3",
