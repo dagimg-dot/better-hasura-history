@@ -107,7 +107,7 @@ export class HistoryService {
     return items.value.filter(
       (entry) =>
         entry.operationName === baseName ||
-        (entry.operationName && entry.operationName.startsWith(`${baseName}_`)),
+        (entry.operationName?.startsWith(`${baseName}_`)),
     )
   }
 

@@ -1,7 +1,7 @@
-import { computed, type Ref, ref, shallowRef } from 'vue'
+import { computed, ref } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
-import type { HistoryItem, HistorySearchOptions } from '@/shared/types'
+import type { HistoryItem } from '@/shared/types'
 
 // Singleton state - Using shallow: true for performance
 const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undefined, {
