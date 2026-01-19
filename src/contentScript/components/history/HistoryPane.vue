@@ -72,6 +72,7 @@
       v-if="tooltip.visible"
       :operation="tooltip.operation"
       :variables="tooltip.variables"
+      :createdAt="tooltip.createdAt"
       :x="tooltip.x"
       :y="tooltip.y"
     />
@@ -164,6 +165,7 @@ const tooltip = ref({
   visible: false,
   operation: '',
   variables: '',
+  createdAt: '',
   x: 0,
   y: 0,
 })
@@ -192,6 +194,8 @@ const handleMouseEnter = async (event: MouseEvent, item: HistoryItemType) => {
     tooltip.value.visible = true
     tooltip.value.operation = item.query
     tooltip.value.variables = item.variables ? JSON.stringify(item.variables, null, 2) : ''
+    tooltip.value.createdAt =
+      new Date(item.timestamp).toDateString() + ', ' + new Date(item.timestamp).toLocaleTimeString()
 
     await nextTick()
 

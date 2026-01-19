@@ -9,6 +9,9 @@
         <h4>Variables</h4>
         <pre>{{ variables }}</pre>
       </div>
+      <div class="created-at">
+        <h4>Created At - {{ createdAt }}</h4>
+      </div>
     </div>
   </div>
 </template>
@@ -17,6 +20,7 @@
 defineProps<{
   operation: string
   variables?: string
+  createdAt: string
   x: number
   y: number
 }>()
@@ -40,6 +44,7 @@ defineProps<{
   background-color: #f5f5f5;
   padding: 10px;
   border-radius: 4px;
+  margin-bottom: 10px;
 }
 
 .preview-content h4 {
