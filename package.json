@@ -1,7 +1,7 @@
 {
   "name": "better-hasura-history",
   "displayName": "Better Hasura History",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Dagim G. Astatkie",
   "description": "",
   "type": "module",
