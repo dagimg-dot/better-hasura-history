@@ -67,6 +67,22 @@ window.addEventListener(
           }
         }
       }
+    } else if (type === 'BHH_EXPORT_HISTORY') {
+      const { json } = data
+      const win = window.open('', '_blank')
+      if (win) {
+        win.document.write(`
+          <html>
+            <head><title>Better Hasura History - Export</title></head>
+            <body style="margin: 0; padding: 20px; font-family: monospace;">
+              <pre>${json}</pre>
+            </body>
+          </html>
+        `)
+        win.document.close()
+      } else {
+        console.error('[Better Hasura History] Failed to open export window')
+      }
     }
   },
   false,

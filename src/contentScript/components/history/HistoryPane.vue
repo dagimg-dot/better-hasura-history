@@ -2,7 +2,48 @@
   <div v-if="isPaneOpen" class="better-history-pane">
     <div class="better-history-title-bar">
       <div class="better-history-title">Better History</div>
-      <div>
+      <div style="display: flex; gap: 5px; align-items: center">
+        <button class="icon-btn" @click.stop="handleExport" title="Export History">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </button>
+        <button class="icon-btn" @click.stop="triggerImport" title="Import History">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </button>
+        <input
+          type="file"
+          ref="fileInputRef"
+          accept=".json"
+          style="display: none"
+          @change="handleImport"
+        />
         <BetterHistoryCloseButton />
       </div>
     </div>
@@ -46,7 +87,63 @@ import { BetterHistoryCloseButton } from '@/contentScript/components/controls'
 import { HistoryItem, HistorySearch, OperationPreview } from '@/contentScript/components/history'
 
 const { isPaneOpen } = useExtensionState()
-const { filteredItems: filteredHistory, searchQuery, items } = useHistory()
+const {
+  filteredItems: filteredHistory,
+  searchQuery,
+  items,
+  exportHistory,
+  importHistory,
+} = useHistory()
+import { logger } from '@/contentScript/utils/logger'
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const handleExport = () => {
+  const json = exportHistory()
+  window.postMessage(
+    {
+      type: 'BHH_EXPORT_HISTORY',
+      data: {
+        json,
+        filename: `better-hasura-history-backup-${new Date().toISOString().split('T')[0]}.json`,
+      },
+    },
+    '*',
+  )
+}
+
+const triggerImport = () => {
+  fileInputRef.value?.click()
+}
+
+const handleImport = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) return
+
+  const file = input.files[0]
+  const reader = new FileReader()
+
+  reader.onload = (e) => {
+    try {
+      const content = e.target?.result as string
+      const data = JSON.parse(content)
+      if (Array.isArray(data)) {
+        const count = importHistory(data)
+        alert(`Successfully imported ${count} items`)
+      } else {
+        alert('Invalid backup file format (expected array)')
+      }
+    } catch (error) {
+      logger.error('Failed to import file', error as Error)
+      alert('Failed to parse backup file')
+    } finally {
+      // Reset input
+      input.value = ''
+    }
+  }
+
+  reader.readAsText(file)
+}
 
 const applyHistoryItem = async (item: HistoryItemType) => {
   window.postMessage(
@@ -219,5 +316,22 @@ onUnmounted(() => {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  border-radius: 3px;
+}
+
+.icon-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
 }
 </style>

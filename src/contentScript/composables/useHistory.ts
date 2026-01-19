@@ -92,6 +92,24 @@ export function useHistory() {
     return importedCount
   }
 
+  const exportHistory = (): string => {
+    try {
+      const data = items.value.map((item) => ({
+        id: item.id,
+        operation_name: item.operationName, // Keep legacy compatibility if desired, or just use new fields
+        operation: item.query, // Legacy compat
+        variables: JSON.stringify(item.variables), // Legacy compat
+        query: item.query,
+        operationName: item.operationName,
+        createdAt: new Date(item.timestamp).toISOString(),
+      }))
+      return JSON.stringify(data, null, 2)
+    } catch (error) {
+      logger.error('Failed to export history', error as Error)
+      return ''
+    }
+  }
+
   const addHistoryItem = (item: HistoryItem) => {
     try {
       const existingIndex = items.value.findIndex((existing) => existing.id === item.id)
@@ -166,5 +184,6 @@ export function useHistory() {
     loadHistory,
     updateHistoryItem,
     importHistory,
+    exportHistory,
   }
 }
