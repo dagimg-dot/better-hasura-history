@@ -38,19 +38,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { history, isPaneOpen } from '@/contentScript/state'
-import type { HistoryEntry } from '@/contentScript/types'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useExtensionState } from '@/contentScript/composables/useExtensionState'
+import { useHistory } from '@/contentScript/composables/useHistory'
+import type { HistoryItem as HistoryItemType } from '@/shared/types/history'
 import { BetterHistoryCloseButton } from '@/contentScript/components/controls'
 import { HistoryItem, HistorySearch, OperationPreview } from '@/contentScript/components/history'
 
-const applyHistoryItem = async (item: HistoryEntry) => {
+const { isPaneOpen } = useExtensionState()
+const { filteredItems: filteredHistory, searchQuery, items } = useHistory()
+
+const applyHistoryItem = async (item: HistoryItemType) => {
   window.postMessage(
     {
       type: 'BHH_APPLY_HISTORY_ITEM',
       data: {
-        operation: item.operation,
-        variables: item.variables,
+        operation: item.query,
+        variables: JSON.stringify(item.variables, null, 2),
       },
     },
     '*',
@@ -86,11 +90,11 @@ const updateTooltipPosition = (event: MouseEvent) => {
   tooltip.value.y = y
 }
 
-const handleMouseEnter = async (event: MouseEvent, item: HistoryEntry) => {
+const handleMouseEnter = async (event: MouseEvent, item: HistoryItemType) => {
   if (event.ctrlKey || event.metaKey) {
     tooltip.value.visible = true
-    tooltip.value.operation = item.operation
-    tooltip.value.variables = item.variables || ''
+    tooltip.value.operation = item.query
+    tooltip.value.variables = item.variables ? JSON.stringify(item.variables, null, 2) : ''
 
     await nextTick()
 
@@ -108,26 +112,16 @@ const handleMouseMove = (event: MouseEvent) => {
   }
 }
 
-const searchTerm = ref('')
 const selectedItemIndex = ref(-1)
 const historyListRef = ref<HTMLDivElement | null>(null)
 
-const filteredHistory = computed(() => {
-  if (!searchTerm.value) {
-    return history.value
-  }
-  return history.value.filter((item) =>
-    item.operation_name.toLowerCase().includes(searchTerm.value.toLowerCase()),
-  )
-})
-
 // Reset selection when search term changes
-watch(searchTerm, () => {
+watch(searchQuery, () => {
   selectedItemIndex.value = -1
 })
 
 const updateSearchTerm = (newVal: string) => {
-  searchTerm.value = newVal
+  searchQuery.value = newVal
 }
 
 const handleKeyNavigation = (direction: 'up' | 'down') => {

@@ -7,7 +7,7 @@
     @mousemove="$emit('move-preview', $event)"
   >
     <div v-if="!isEditing" class="item-content">
-      {{ item.operation_name }}
+      {{ item.operationName }}
     </div>
     <div v-else class="edit-container">
       <input
@@ -147,32 +147,34 @@
 
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import { history } from '@/contentScript/state'
-import type { HistoryEntry } from '@/contentScript/types'
+import { useHistory } from '@/contentScript/composables/useHistory'
+import type { HistoryItem } from '@/shared/types/history'
 
 const props = defineProps<{
-  item: HistoryEntry
+  item: HistoryItem
   selected: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-item', item: HistoryEntry): void
-  (e: 'show-preview', event: MouseEvent, item: HistoryEntry): void
+  (e: 'select-item', item: HistoryItem): void
+  (e: 'show-preview', event: MouseEvent, item: HistoryItem): void
   (e: 'hide-preview'): void
   (e: 'move-preview', event: MouseEvent): void
 }>()
+
+const { removeHistoryItem, updateHistoryItem } = useHistory()
 
 const isConfirmingDelete = ref(false)
 const isEditing = ref(false)
 const editableName = ref('')
 
 const confirmDeleteItem = () => {
-  history.value = history.value.filter((item) => item.id !== props.item.id)
+  removeHistoryItem(props.item.id)
 }
 
 const startEditing = async () => {
   isEditing.value = true
-  editableName.value = props.item.operation_name
+  editableName.value = props.item.operationName || ''
   // Focus the input after it's rendered
   await nextTick()
   const input = document.querySelector('.edit-input') as HTMLInputElement
@@ -182,10 +184,9 @@ const startEditing = async () => {
 
 const saveEdit = () => {
   if (editableName.value.trim() === '') return // Do not save if empty
-  const entry = history.value.find((item) => item.id === props.item.id)
-  if (entry) {
-    entry.operation_name = editableName.value
-  }
+
+  updateHistoryItem(props.item.id, { operationName: editableName.value })
+
   isEditing.value = false
 }
 

@@ -1,6 +1,7 @@
-import { history } from '../state'
-import type { HistoryEntry, ParsedQuery } from '../types'
-import { logger } from '../utils/logger'
+import { useHistory } from '@/contentScript/composables/useHistory'
+import type { HistoryItem } from '@/shared/types/history'
+import type { ParsedQuery } from '@/contentScript/types'
+import { logger } from '@/contentScript/utils/logger'
 
 /**
  * Service for managing history entries business logic.
@@ -9,44 +10,51 @@ import { logger } from '../utils/logger'
 export class HistoryService {
   /**
    * Create a new history entry from parsed query data.
-   * @param parsed - The parsed query data
-   * @returns The created history entry
-   * @throws Error if the entry is a duplicate or invalid
    */
-  static createEntry(parsed: ParsedQuery): HistoryEntry {
+  static createEntry(parsed: ParsedQuery): HistoryItem {
     if (!parsed.operation_name || !parsed.operation) {
       throw new Error('Invalid parsed query: missing required fields')
     }
 
     const { operation_name, operation, variables } = parsed
 
-    if (HistoryService.isDuplicate(operation, variables)) {
+    let parsedVariables: Record<string, any> = {}
+    if (variables) {
+      try {
+        parsedVariables = JSON.parse(variables)
+      } catch (e) {
+        logger.warn('Failed to parse variables JSON', e)
+        parsedVariables = {}
+      }
+    }
+
+    if (HistoryService.isDuplicate(operation, parsedVariables)) {
       throw new Error('Duplicate entry')
     }
 
     const uniqueName = HistoryService.generateUniqueName(operation_name)
 
-    const entry: HistoryEntry = {
+    const entry: HistoryItem = {
       id: crypto.randomUUID(),
-      operation_name: uniqueName,
-      operation,
-      variables: variables || '',
-      createdAt: new Date().toISOString(),
+      operationName: uniqueName, // Mapped from operation_name
+      variables: parsedVariables,
+      timestamp: Date.now(),
+      query: operation, // Use operation as query string
+      operationType: 'query', // Default or parsed? ParsedQuery usually has types? Assuming query for now or we need to extract it.
     }
 
-    logger.info(`Created new history entry: ${entry.operation_name}`)
+    logger.info(`Created new history entry: ${entry.operationName}`)
     return entry
   }
 
   /**
    * Add a new entry to the history.
-   * @param parsed - The parsed query data
-   * @returns The created entry or null if it's a duplicate
    */
-  static addEntry(parsed: ParsedQuery): HistoryEntry | null {
+  static addEntry(parsed: ParsedQuery): HistoryItem | null {
+    const { addHistoryItem } = useHistory()
     try {
       const entry = HistoryService.createEntry(parsed)
-      history.value.unshift(entry)
+      addHistoryItem(entry)
       return entry
     } catch (error) {
       if (error instanceof Error && error.message === 'Duplicate entry') {
@@ -61,10 +69,12 @@ export class HistoryService {
   /**
    * Check if an entry with the same operation and variables already exists.
    */
-  private static isDuplicate(operation: string, variables?: string): boolean {
-    const normalizedVariables = variables || ''
-    return history.value.some(
-      (entry) => entry.operation === operation && (entry.variables || '') === normalizedVariables,
+  private static isDuplicate(operation: string, variables?: Record<string, any>): boolean {
+    const { items } = useHistory()
+    const normalizedVariables = JSON.stringify(variables || {})
+    return items.value.some(
+      (entry) =>
+        entry.query === operation && JSON.stringify(entry.variables || {}) === normalizedVariables,
     )
   }
 
@@ -73,7 +83,7 @@ export class HistoryService {
    */
   private static generateUniqueName(baseName: string): string {
     const relatedEntries = HistoryService.getRelatedEntries(baseName)
-    const existingNames = new Set(relatedEntries.map((entry) => entry.operation_name))
+    const existingNames = new Set(relatedEntries.map((entry) => entry.operationName))
 
     if (!existingNames.has(baseName)) {
       return baseName
@@ -91,10 +101,12 @@ export class HistoryService {
   /**
    * Get all entries related to a base operation name.
    */
-  private static getRelatedEntries(baseName: string): HistoryEntry[] {
-    return history.value.filter(
+  private static getRelatedEntries(baseName: string): HistoryItem[] {
+    const { items } = useHistory()
+    return items.value.filter(
       (entry) =>
-        entry.operation_name === baseName || entry.operation_name.startsWith(`${baseName}_`),
+        entry.operationName === baseName ||
+        (entry.operationName && entry.operationName.startsWith(`${baseName}_`)),
     )
   }
 
@@ -102,9 +114,10 @@ export class HistoryService {
    * Remove an entry from history by ID.
    */
   static removeEntry(id: string): boolean {
-    const initialLength = history.value.length
-    history.value = history.value.filter((entry) => entry.id !== id)
-    const removed = history.value.length < initialLength
+    const { removeHistoryItem, items } = useHistory()
+    const initialLength = items.value.length
+    removeHistoryItem(id)
+    const removed = items.value.length < initialLength
 
     if (removed) {
       logger.info(`Removed history entry with ID: ${id}`)
@@ -117,8 +130,9 @@ export class HistoryService {
    * Clear all history entries.
    */
   static clearHistory(): void {
-    const count = history.value.length
-    history.value = []
+    const { clearHistory, items } = useHistory()
+    const count = items.value.length
+    clearHistory()
     logger.info(`Cleared ${count} history entries`)
   }
 
@@ -126,7 +140,8 @@ export class HistoryService {
    * Get history entries count.
    */
   static getCount(): number {
-    return history.value.length
+    const { items } = useHistory()
+    return items.value.length
   }
 
   /**
@@ -137,13 +152,14 @@ export class HistoryService {
       throw new Error('Entry name cannot be empty')
     }
 
-    const entry = history.value.find((e) => e.id === id)
+    const { updateHistoryItem, items } = useHistory()
+    const entry = items.value.find((e) => e.id === id)
     if (!entry) {
       return false
     }
 
-    const oldName = entry.operation_name
-    entry.operation_name = newName.trim()
+    const oldName = entry.operationName
+    updateHistoryItem(id, { operationName: newName.trim() })
     logger.info(`Updated entry name from "${oldName}" to "${newName}"`)
 
     return true

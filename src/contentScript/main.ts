@@ -123,7 +123,7 @@ class BetterHasuraHistory {
 
       const entry = HistoryService.addEntry(parsed)
       if (entry) {
-        logger.info(`New history entry added: ${entry.operation_name}`)
+        logger.info(`New history entry added: ${entry.operationName}`)
       }
     } catch (error) {
       logger.error('Error handling execute click', error)

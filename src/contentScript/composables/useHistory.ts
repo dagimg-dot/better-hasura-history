@@ -1,9 +1,10 @@
 import { computed, type Ref, ref } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
 import type { HistoryItem, HistorySearchOptions } from '@/shared/types'
 
 // Singleton state
-const items: Ref<HistoryItem[]> = ref([])
+const items = useStorage<HistoryItem[]>('better-hasura-history-items', [])
 const isLoading = ref(false)
 const searchQuery = ref('')
 const selectedOperationType = ref<'query' | 'mutation' | 'subscription' | 'all'>('all')
@@ -29,6 +30,67 @@ export function useHistory() {
 
     return filtered.sort((a, b) => b.timestamp - a.timestamp)
   })
+
+  // Helper to migrate legacy entries
+  const migrateLegacyEntry = (entry: any): HistoryItem | null => {
+    // Check if it's a legacy entry
+    if (entry.operation_name && typeof entry.operation_name === 'string') {
+      let variables = {}
+      if (typeof entry.variables === 'string') {
+        try {
+          variables = JSON.parse(entry.variables) as Record<string, any>
+        } catch (e) {
+          logger.warn('Failed to parse legacy variables', { error: e })
+        }
+      } else if (typeof entry.variables === 'object') {
+        variables = entry.variables
+      }
+
+      return {
+        id: entry.id || crypto.randomUUID(),
+        operationName: entry.operation_name,
+        variables: variables as Record<string, any>,
+        query: entry.operation,
+        timestamp: entry.createdAt ? new Date(entry.createdAt).getTime() : Date.now(),
+        operationType: 'query', // Default assumption
+      }
+    }
+    // If it's already a valid format but maybe missing new fields
+    if (entry.operationName && entry.query) {
+      return entry as HistoryItem
+    }
+    return null
+  }
+
+  const importHistory = (data: any[]) => {
+    let importedCount = 0
+    try {
+      data.forEach((entry) => {
+        const migrated = migrateLegacyEntry(entry)
+        if (migrated) {
+          // Check for duplicates
+          const isDuplicate = items.value.some((existing) => existing.id === migrated.id)
+          if (!isDuplicate) {
+            // Also check for duplicate content (same name/query) to avoid clutter
+            const isContentDuplicate = items.value.some(
+              (existing) =>
+                existing.operationName === migrated.operationName &&
+                existing.query === migrated.query,
+            )
+
+            if (!isContentDuplicate) {
+              items.value.unshift(migrated)
+              importedCount++
+            }
+          }
+        }
+      })
+      logger.info(`Imported ${importedCount} history items`)
+    } catch (error) {
+      logger.error('Failed to import history', error as Error)
+    }
+    return importedCount
+  }
 
   const addHistoryItem = (item: HistoryItem) => {
     try {
@@ -86,17 +148,10 @@ export function useHistory() {
   }
 
   const loadHistory = async () => {
+    // With useStorage, we don't need manual loading, but we can keep this for interface compatibility
     isLoading.value = true
-    try {
-      // This would typically load from storage
-      // For now, we'll just simulate loading
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      logger.debug('History loaded', { itemCount: items.value.length })
-    } catch (error) {
-      logger.error('Failed to load history', error as Error)
-    } finally {
-      isLoading.value = false
-    }
+    await new Promise((r) => setTimeout(r, 50))
+    isLoading.value = false
   }
 
   return {
@@ -110,5 +165,6 @@ export function useHistory() {
     clearHistory,
     loadHistory,
     updateHistoryItem,
+    importHistory,
   }
 }
