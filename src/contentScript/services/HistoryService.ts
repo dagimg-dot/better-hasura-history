@@ -106,8 +106,7 @@ export class HistoryService {
     const { items } = useHistory()
     return items.value.filter(
       (entry) =>
-        entry.operationName === baseName ||
-        (entry.operationName?.startsWith(`${baseName}_`)),
+        entry.operationName === baseName || entry.operationName?.startsWith(`${baseName}_`),
     )
   }
 
