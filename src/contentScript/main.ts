@@ -1,5 +1,4 @@
 import { DOMManager, HistoryService, VueAppManager } from './services'
-import { parseCodeMirrorHtml } from './utils/htmlParser'
 import { logger } from './utils/logger'
 
 /**
@@ -24,8 +23,26 @@ class BetterHasuraHistory {
     this.domManager = new DOMManager(elements.toolbar, elements.graphiqlContainer)
 
     this.handleExecuteClick = this.handleExecuteClick.bind(this)
+    this.handleMessage = this.handleMessage.bind(this)
 
     elements.executeButton.addEventListener('click', this.handleExecuteClick)
+    window.addEventListener('message', this.handleMessage)
+  }
+
+  private handleMessage(event: MessageEvent): void {
+    if (event.source !== window) return
+
+    const { type, data } = event.data
+    if (type === 'BHH_EDITOR_CONTENT_RESPONSE') {
+      try {
+        const entry = HistoryService.addEntry(data)
+        if (entry) {
+          logger.info(`New history entry added: ${entry.operationName}`)
+        }
+      } catch (error) {
+        logger.error('Error adding history entry from response', error)
+      }
+    }
   }
 
   /**
@@ -85,6 +102,7 @@ class BetterHasuraHistory {
       this.domManager.cleanup()
 
       // Restore original history button visibility
+      window.removeEventListener('message', this.handleMessage)
       this.toggleOriginalHistory(true)
       this.originalHistoryButton = null
 
@@ -125,18 +143,9 @@ class BetterHasuraHistory {
    */
   private handleExecuteClick(): void {
     try {
-      const parsed = parseCodeMirrorHtml()
-      if (!parsed) {
-        logger.warn('Failed to parse query from CodeMirror')
-        return
-      }
-
-      const entry = HistoryService.addEntry(parsed)
-      if (entry) {
-        logger.info(`New history entry added: ${entry.operationName}`)
-      }
+      window.postMessage({ type: 'BHH_GET_EDITOR_CONTENT' }, '*')
     } catch (error) {
-      logger.error('Error handling execute click', error)
+      logger.error('Error triggering content capture', error)
     }
   }
 

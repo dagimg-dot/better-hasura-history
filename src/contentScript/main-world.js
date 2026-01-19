@@ -83,6 +83,33 @@ window.addEventListener(
       } else {
         console.error('[Better Hasura History] Failed to open export window')
       }
+    } else if (type === 'BHH_GET_EDITOR_CONTENT') {
+      const queryEditorEl = document.querySelector('.query-editor .CodeMirror')
+      const variablesEditorEl = document.querySelector('.variable-editor .CodeMirror')
+
+      if (queryEditorEl && queryEditorEl.CodeMirror && variablesEditorEl && variablesEditorEl.CodeMirror) {
+        const queryEditor = queryEditorEl.CodeMirror
+        const variablesEditor = variablesEditorEl.CodeMirror
+
+        const operation = queryEditor.getValue() || ''
+        const variables = variablesEditor.getValue() || ''
+
+        // Try to find operation name in the string
+        let operation_name = 'Unnamed Operation'
+        const nameMatch = operation.match(/(?:query|mutation|subscription)\s+([a-zA-Z0-9_]+)/)
+        if (nameMatch && nameMatch[1]) {
+          operation_name = nameMatch[1]
+        }
+
+        window.postMessage({
+          type: 'BHH_EDITOR_CONTENT_RESPONSE',
+          data: {
+            operation,
+            operation_name,
+            variables
+          }
+        }, '*')
+      }
     }
   },
   false,
