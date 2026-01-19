@@ -58,6 +58,49 @@ export class DOMManager {
   }
 
   /**
+   * Create and insert the prettify variables button into the variable editor title.
+   */
+  createPrettifyButton(): HTMLButtonElement | null {
+    const titleEl = document.getElementById('variable-editor-title')
+    if (!titleEl) return null
+
+    // Check if button already exists
+    const existingBtn = titleEl.querySelector('.bhh-prettify-btn')
+    if (existingBtn) return existingBtn as HTMLButtonElement
+
+    titleEl.style.display = 'flex'
+    titleEl.style.alignItems = 'center'
+    titleEl.style.justifyContent = 'space-between'
+    titleEl.style.padding = '6px 8px 8px 43px'
+
+    const button = document.createElement('button')
+    button.style.all = 'unset'
+    button.style.display = 'flex'
+    button.style.alignItems = 'center'
+    button.style.justifyContent = 'center'
+    button.className = 'bhh-prettify-btn'
+    button.textContent = 'Prettify'
+    button.title = 'Format JSON variables'
+    button.style.marginLeft = '10px'
+    button.style.cursor = 'pointer'
+    button.style.fontSize = '12px'
+    button.style.border = '1px solid #ccc'
+    button.style.borderRadius = '3px'
+    button.style.background = '#fff'
+    button.style.padding = '2px 5px'
+    button.style.textTransform = 'none'
+    button.style.fontVariant = 'normal'
+
+    // Stop propagation on mousedown to prevent parent resize/collapse behavior
+    button.addEventListener('mousedown', (e) => {
+      e.stopPropagation()
+    })
+
+    titleEl.appendChild(button)
+    return button
+  }
+
+  /**
    * Find and return the original history button element.
    */
   findOriginalHistoryButton(): HTMLElement | null {

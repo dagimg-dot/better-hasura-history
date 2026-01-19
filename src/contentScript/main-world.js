@@ -50,6 +50,23 @@ window.addEventListener(
           console.error('[Better Hasura History] Timed out waiting for CodeMirror instances.')
         }
       }, 100)
+    } else if (type === 'BHH_PRETTIFY_VARIABLES') {
+      const variablesEditorEl = document.querySelector('.variable-editor .CodeMirror')
+
+      if (variablesEditorEl && variablesEditorEl.CodeMirror) {
+        const editor = variablesEditorEl.CodeMirror
+        const currentVal = editor.getValue()
+        
+        if (currentVal) {
+          try {
+            const parsed = JSON.parse(currentVal)
+            const pretty = JSON.stringify(parsed, null, 2)
+            editor.setValue(pretty)
+          } catch (e) {
+            console.error('[Better Hasura History] Failed to prettify variables:', e)
+          }
+        }
+      }
     }
   },
   false,

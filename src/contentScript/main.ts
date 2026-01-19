@@ -46,6 +46,16 @@ class BetterHasuraHistory {
 
       this.vueAppManager.initializeApps(buttonContainer, paneContainer)
 
+      const prettifyBtn = this.domManager.createPrettifyButton()
+
+      if (prettifyBtn) {
+        prettifyBtn.addEventListener('click', (event) => {
+          event.stopPropagation()
+          event.preventDefault()
+          window.postMessage({ type: 'BHH_PRETTIFY_VARIABLES' }, '*')
+        })
+      }
+
       this.originalHistoryButton = this.domManager.findOriginalHistoryButton()
       this.toggleOriginalHistory(initialSettings.showOriginalHistory)
 
