@@ -38,13 +38,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
-import { history, isPaneOpen } from '../state'
-import HistorySearch from './HistorySearch.vue'
-import OperationPreview from './OperationPreview.vue'
-import BetterHistoryCloseButton from './BetterHistoryCloseButton.vue'
-import HistoryItem from './HistoryItem.vue'
-import type { HistoryEntry } from '../types'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { history, isPaneOpen } from '@/contentScript/state'
+import type { HistoryEntry } from '@/contentScript/types'
+import { BetterHistoryCloseButton } from '@/contentScript/components/controls'
+import { HistoryItem, HistorySearch, OperationPreview } from '@/contentScript/components/history'
 
 const applyHistoryItem = async (item: HistoryEntry) => {
   window.postMessage(

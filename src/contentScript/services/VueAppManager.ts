@@ -1,7 +1,7 @@
-import { App, createApp } from 'vue'
-import BetterHistory from '../components/BetterHistoryBtn.vue'
-import HistoryPane from '../components/HistoryPane.vue'
-import { logger } from '../utils/logger'
+import { type App, createApp } from 'vue'
+import { BetterHistoryBtn } from '@/contentScript/components/controls'
+import { HistoryPane } from '@/contentScript/components/history'
+import { logger } from '@/contentScript/utils/logger'
 
 /**
  * Manages Vue application lifecycle for the Better Hasura History extension.
@@ -37,7 +37,7 @@ export class VueAppManager {
    * Create and mount the button Vue app.
    */
   private createButtonApp(container: HTMLElement): void {
-    this.buttonApp = createApp(BetterHistory)
+    this.buttonApp = createApp(BetterHistoryBtn)
 
     this.buttonApp.config.errorHandler = (err, instance, info) => {
       logger.error('Button app error:', err, info)

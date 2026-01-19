@@ -1,5 +1,5 @@
+import { ExtensionLifecycleManager, NavigationManager, SettingsManager } from './services'
 import { logger } from './utils/logger'
-import { ExtensionLifecycleManager, SettingsManager, NavigationManager } from './services'
 
 // Inject the bridge script into the main page context
 const script = document.createElement('script')

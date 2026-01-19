@@ -41,7 +41,11 @@ function parseCodeMirrorHtml(): ParsedQuery | null {
 
   variables = variables.replace(/\u200B/g, '').trim()
 
-  return { operation, operation_name: operation_name || 'Unnamed Operation', variables }
+  return {
+    operation,
+    operation_name: operation_name || 'Unnamed Operation',
+    variables,
+  }
 }
 
 export { parseCodeMirrorHtml }

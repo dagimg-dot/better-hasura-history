@@ -1,0 +1,42 @@
+/* 
+  Defines the CSS custom properties (variables) for theming the extension.
+  It includes a light theme (default) and a dark theme that is activated
+  when the body has the attribute `data-bhh-theme="dark"`.
+*/
+
+:root {
+  /* Default Light Theme */
+  --bhh-bg-primary: #ffffff;
+  --bhh-bg-secondary: #f0f0f0;
+  --bhh-bg-tertiary: #f5f5f5;
+  --bhh-btn-primary: #fff;
+  --bhh-text-primary: #212121;
+  --bhh-text-secondary: #555555;
+  --bhh-text-tertiary: #888888;
+  --bhh-border-primary: #d6d6d6;
+  --bhh-border-secondary: #eeeeee;
+  --bhh-border-tertiary: #cccccc;
+  --bhh-accent-primary: #156c85;
+  --bhh-accent-primary-text: #ffffff;
+  --bhh-btn-shadow: rgba(255, 255, 255, 0.7);
+  --bhh-btn-txt: #555;
+}
+
+body[data-bhh-theme='dark'] {
+  /* Dark Theme Overrides */
+  --bhh-bg-primary: #121415;
+  --bhh-bg-secondary: #3a3a3a;
+  --bhh-bg-tertiary: #424242;
+  --bhh-btn-primary: #1e2122;
+  --bhh-btn-gradient: linear-gradient(#191b1c, #212425);
+  --bhh-btn-txt: #555;
+  --bhh-text-primary: #e0e0e0;
+  --bhh-text-secondary: #cccccc;
+  --bhh-text-tertiary: #aaaaaa;
+  --bhh-border-primary: #3c4143;
+  --bhh-border-secondary: #5a5a5a;
+  --bhh-border-tertiary: #6a6a6a;
+  --bhh-accent-primary: #1e88e5; /* A slightly brighter blue for dark mode */
+  --bhh-accent-primary-text: #ffffff;
+  --bhh-btn-shadow: #1b1e1e;
+}

@@ -1,6 +1,6 @@
-import { waitForElement } from '../utils/waitForElement'
-import { logger } from '../utils/logger'
 import BetterHasuraHistory from '../main'
+import { logger } from '../utils/logger'
+import { waitForElement } from '../utils/waitForElement'
 import { SettingsManager } from './SettingsManager'
 
 /**
@@ -36,7 +36,9 @@ export class ExtensionLifecycleManager {
       const elements = await this.waitForRequiredElements()
 
       this.bhhInstance = new BetterHasuraHistory(elements)
-      await this.bhhInstance.init({ showOriginalHistory: finalSettings.showOriginalHistory })
+      await this.bhhInstance.init({
+        showOriginalHistory: finalSettings.showOriginalHistory,
+      })
 
       this.isInitialized = true
       logger.info('Extension initialized successfully')

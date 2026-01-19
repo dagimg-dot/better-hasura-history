@@ -5,7 +5,9 @@
 </template>
 
 <script setup lang="ts">
-import { isPaneOpen } from '../state'
+import { useExtensionState } from '@/contentScript/composables/useExtensionState'
+
+const { isPaneOpen } = useExtensionState()
 
 const togglePane = () => {
   isPaneOpen.value = !isPaneOpen.value

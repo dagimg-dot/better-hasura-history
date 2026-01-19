@@ -1,5 +1,5 @@
 import { history } from '../state'
-import { HistoryEntry, ParsedQuery } from '../types'
+import type { HistoryEntry, ParsedQuery } from '../types'
 import { logger } from '../utils/logger'
 
 /**

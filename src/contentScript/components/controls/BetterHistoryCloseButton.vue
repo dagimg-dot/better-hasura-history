@@ -20,5 +20,7 @@
 </template>
 
 <script lang="ts" setup>
-import { isPaneOpen } from '../state'
+import { useExtensionState } from '@/contentScript/composables/useExtensionState'
+
+const { isPaneOpen } = useExtensionState()
 </script>

@@ -146,9 +146,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
-import type { HistoryEntry } from '../types'
-import { history } from '../state'
+import { nextTick, ref } from 'vue'
+import { history } from '@/contentScript/state'
+import type { HistoryEntry } from '@/contentScript/types'
 
 const props = defineProps<{
   item: HistoryEntry
@@ -167,7 +167,7 @@ const isEditing = ref(false)
 const editableName = ref('')
 
 const confirmDeleteItem = () => {
-  history.value = history.value.filter((h) => h.id !== props.item.id)
+  history.value = history.value.filter((item) => item.id !== props.item.id)
 }
 
 const startEditing = async () => {
@@ -182,7 +182,7 @@ const startEditing = async () => {
 
 const saveEdit = () => {
   if (editableName.value.trim() === '') return // Do not save if empty
-  const entry = history.value.find((h) => h.id === props.item.id)
+  const entry = history.value.find((item) => item.id === props.item.id)
   if (entry) {
     entry.operation_name = editableName.value
   }
@@ -217,7 +217,8 @@ li:hover {
 }
 
 li.selected {
-  background-color: #156c85; /* Primary color from your theme */
+  background-color: #156c85;
+  /* Primary color from your theme */
   color: white;
 }
 
@@ -259,13 +260,16 @@ li.selected:hover {
   cursor: pointer;
   padding: 2px;
   margin-left: 4px;
-  color: #888; /* A more visible default color */
-  display: none; /* Hide actions by default */
+  color: #888;
+  /* A more visible default color */
+  display: none;
+  /* Hide actions by default */
   line-height: 1;
 }
 
 li:hover .action-button {
-  display: flex; /* Use flex to align SVG correctly */
+  display: flex;
+  /* Use flex to align SVG correctly */
 }
 
 li.selected .action-button,
@@ -286,9 +290,12 @@ li.selected:hover .action-button {
 }
 
 .action-button.confirm:hover {
-  color: #a7f3d0; /* light green */
+  color: #a7f3d0;
+  /* light green */
 }
+
 .action-button.cancel:hover {
-  color: #fca5a5; /* light red */
+  color: #fca5a5;
+  /* light red */
 }
 </style>

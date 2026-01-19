@@ -1,6 +1,6 @@
+import { DOMManager, HistoryService, VueAppManager } from './services'
 import { parseCodeMirrorHtml } from './utils/htmlParser'
 import { logger } from './utils/logger'
-import { DOMManager, VueAppManager, HistoryService } from './services'
 
 /**
  * Required DOM elements for the extension to function.
