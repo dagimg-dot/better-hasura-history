@@ -25,9 +25,9 @@ export class VueAppManager {
       this.createButtonApp(buttonContainer)
       this.createPaneApp(paneContainer)
       this.isInitialized = true
-      logger.info('Vue apps initialized successfully')
+      logger.debug('Vue apps initialized successfully')
     } catch (error) {
-      logger.error('Failed to initialize Vue apps', error)
+      logger.error('Failed to initialize Vue apps', error as Error)
       this.cleanup()
       throw error
     }
@@ -40,7 +40,7 @@ export class VueAppManager {
     this.buttonApp = createApp(BetterHistoryBtn)
 
     this.buttonApp.config.errorHandler = (err, instance, info) => {
-      logger.error('Button app error:', err, info)
+      logger.error('Button app error:', err as Error, { info })
     }
 
     this.buttonApp.mount(container)
@@ -53,7 +53,7 @@ export class VueAppManager {
     this.paneApp = createApp(HistoryPane)
 
     this.paneApp.config.errorHandler = (err, instance, info) => {
-      logger.error('Pane app error:', err, info)
+      logger.error('Pane app error:', err as Error, { info })
     }
 
     this.paneApp.mount(container)
@@ -75,9 +75,9 @@ export class VueAppManager {
       }
 
       this.isInitialized = false
-      logger.info('Vue apps cleaned up successfully')
+      logger.debug('Vue apps cleaned up successfully')
     } catch (error) {
-      logger.error('Error during Vue apps cleanup', error)
+      logger.error('Error during Vue apps cleanup', error as Error)
       // Force reset even if cleanup failed
       this.buttonApp = null
       this.paneApp = null

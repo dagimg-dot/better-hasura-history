@@ -23,7 +23,7 @@ export class HistoryService {
       try {
         parsedVariables = JSON.parse(variables)
       } catch (e) {
-        logger.warn('Failed to parse variables JSON', e)
+        logger.warn('Failed to parse variables JSON', { error: e })
         parsedVariables = {}
       }
     }
@@ -62,7 +62,7 @@ export class HistoryService {
         logger.info('Skipping duplicate history entry')
         return null
       }
-      logger.error('Failed to create history entry', error)
+      logger.error('Failed to create history entry', error as Error)
       throw error
     }
   }

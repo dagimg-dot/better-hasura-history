@@ -1,4 +1,4 @@
-type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogEntry {
   level: LogLevel
@@ -24,7 +24,12 @@ export class Logger {
   }
 
   setLogLevel(level: LogLevel): void {
+    console.info(`[Better Hasura History] Setting log level to: ${level}`)
     this.logLevel = level
+  }
+
+  getLogLevel(): LogLevel {
+    return this.logLevel
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -59,7 +64,7 @@ export class Logger {
     }
 
     // Console output with proper formatting
-    const prefix = `[BHH:${level.toUpperCase()}]`
+    const prefix = `[Better Hasura History]`
     const args: any[] = [prefix, message]
 
     if (context) args.push(context)

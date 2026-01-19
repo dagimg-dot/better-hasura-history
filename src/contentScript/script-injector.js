@@ -3,7 +3,7 @@
  * It interacts directly with Hasura's CodeMirror instances.
  */
 
-console.info('[BHH] script-injector.js loaded in MAIN world.')
+console.debug('[BHH] script-injector.js loaded in MAIN world.')
 
 window.addEventListener(
   'message',

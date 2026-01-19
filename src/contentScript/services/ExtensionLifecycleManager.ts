@@ -24,12 +24,22 @@ export class ExtensionLifecycleManager {
    * Initialize the extension with the provided settings.
    */
   async initialize(settings?: ReturnType<typeof SettingsManager.mergeSettings>): Promise<void> {
+    const finalSettings = settings || (await SettingsManager.getSettings())
+    console.info(
+      '[Better Hasura History] ExtensionLifecycleManager.initialize called with settings:',
+      finalSettings,
+    )
+    logger.debug('Initializing extension with settings:', finalSettings)
+
+    // Apply log level setting
+    if (finalSettings.logLevel) {
+      logger.setLogLevel(finalSettings.logLevel)
+    }
+
     if (this.isInitialized) {
       logger.warn('Extension already initialized - skipping')
       return
     }
-
-    const finalSettings = settings || (await SettingsManager.getSettings())
 
     try {
       logger.info('Starting extension initialization...')
@@ -43,7 +53,7 @@ export class ExtensionLifecycleManager {
       this.isInitialized = true
       logger.info('Extension initialized successfully')
     } catch (error) {
-      logger.error('Extension initialization failed', error)
+      logger.error('Extension initialization failed', error as Error)
       this.cleanup()
       throw error
     }
@@ -53,7 +63,7 @@ export class ExtensionLifecycleManager {
    * Wait for all required DOM elements to be available.
    */
   private async waitForRequiredElements(): Promise<RequiredElements> {
-    logger.info('Waiting for required DOM elements...')
+    logger.debug('Waiting for required DOM elements...')
 
     const elementPromises = [
       waitForElement('.toolbar'),
@@ -72,7 +82,7 @@ export class ExtensionLifecycleManager {
       throw new Error(`Required DOM elements not found: ${missing.join(', ')}`)
     }
 
-    logger.info('All required DOM elements found')
+    logger.debug('All required DOM elements found')
     return { toolbar, graphiqlContainer, executeButton }
   }
 
@@ -90,7 +100,7 @@ export class ExtensionLifecycleManager {
       this.isInitialized = false
       logger.info('Extension cleanup completed')
     } catch (error) {
-      logger.error('Error during extension cleanup', error)
+      logger.error('Error during extension cleanup', error as Error)
       // Force reset even if cleanup failed
       this.bhhInstance = null
       this.isInitialized = false
@@ -110,7 +120,7 @@ export class ExtensionLifecycleManager {
       this.bhhInstance.toggleOriginalHistory(show)
       logger.info(`Original history visibility set to: ${show}`)
     } catch (error) {
-      logger.error('Failed to toggle original history', error)
+      logger.error('Failed to toggle original history', error as Error)
     }
   }
 
@@ -120,6 +130,17 @@ export class ExtensionLifecycleManager {
   async handleSettingsChange(oldSettings: any, newSettings: any): Promise<void> {
     const mergedOld = SettingsManager.mergeSettings(oldSettings)
     const mergedNew = SettingsManager.mergeSettings(newSettings)
+    console.info('[Better Hasura History] handleSettingsChange:', {
+      old: mergedOld,
+      new: mergedNew,
+    })
+    logger.debug('Settings changed:', { old: mergedOld, new: mergedNew })
+
+    // Handle log level change
+    if (mergedOld.logLevel !== mergedNew.logLevel) {
+      logger.setLogLevel(mergedNew.logLevel)
+      logger.info(`Log level updated to: ${mergedNew.logLevel}`)
+    }
 
     // Handle extension enable/disable
     if (mergedOld.extensionEnabled !== mergedNew.extensionEnabled) {

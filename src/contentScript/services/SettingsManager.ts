@@ -1,11 +1,18 @@
+import type { LogLevel } from '@/shared/logging/Logger'
+
 /**
  * Centralized settings management for the Better Hasura History extension.
  * Handles default settings, storage operations, and settings validation.
  */
 export class SettingsManager {
-  private static readonly DEFAULT_SETTINGS = {
+  private static readonly DEFAULT_SETTINGS: {
+    extensionEnabled: boolean
+    showOriginalHistory: boolean
+    logLevel: LogLevel
+  } = {
     extensionEnabled: true,
     showOriginalHistory: false,
+    logLevel: 'info',
   } as const
 
   /**

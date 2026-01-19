@@ -4,11 +4,13 @@ import { onMounted, ref, watch } from 'vue'
 interface Settings {
   extensionEnabled: boolean
   showOriginalHistory: boolean
+  logLevel: 'debug' | 'info' | 'warn' | 'error'
 }
 
 const settings = ref<Settings>({
   extensionEnabled: true,
   showOriginalHistory: false,
+  logLevel: 'info',
 })
 
 onMounted(() => {
@@ -57,6 +59,22 @@ watch(
           />
           <span class="slider round"></span>
         </label>
+      </div>
+
+      <div class="setting-col">
+        <label for="log-level">Log Level</label>
+        <select
+          id="log-level"
+          v-model="settings.logLevel"
+          class="select-input"
+          :disabled="!settings.extensionEnabled"
+        >
+          <option value="debug">Debug (All logs)</option>
+          <option value="info">Info (Essential)</option>
+          <option value="warn">Warn (Only warnings)</option>
+          <option value="error">Error (Only errors)</option>
+        </select>
+        <p class="description">Higher levels reduce console noise.</p>
       </div>
     </div>
   </main>
@@ -120,6 +138,43 @@ h1 {
 
 .setting label {
   font-size: 1rem;
+}
+
+.setting-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-col label {
+  font-size: 1rem;
+}
+
+.select-input {
+  background-color: #4a5568;
+  color: white;
+  border: 1px solid #718096;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.select-input:focus {
+  border-color: var(--primary-color);
+}
+
+.select-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.description {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin: 0;
 }
 
 .setting input[type='checkbox']:disabled + .slider {

@@ -1,30 +1,16 @@
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-  NONE = 4,
-}
+import { logger as sharedLogger, type Logger } from '@/shared/logging'
+import type { LogLevel } from '@/shared/logging/Logger'
 
-const LOG_PREFIX = '[Better Hasura History]'
-
-// Vite exposes the build mode in `import.meta.env.MODE`.
-// We'll default to logging everything in development and only info and above in production.
-const CURRENT_LOG_LEVEL = import.meta.env.MODE === 'development' ? LogLevel.DEBUG : LogLevel.INFO
-
-function performLog(level: LogLevel, consoleMethod: (...data: any[]) => void, ...args: any[]) {
-  if (level >= CURRENT_LOG_LEVEL) {
-    consoleMethod(LOG_PREFIX, ...args)
-  }
-}
 /**
- * Logger for the content script.
- * @param args - The arguments to log.
- * @returns void
+ * Logger for the content script that wraps the shared robust logger.
+ * This ensures consistency across the extension while keeping the existing utility's interface.
  */
 export const logger = {
-  debug: (...args: any[]) => performLog(LogLevel.DEBUG, console.debug, ...args),
-  info: (...args: any[]) => performLog(LogLevel.INFO, console.info, ...args),
-  warn: (...args: any[]) => performLog(LogLevel.WARN, console.warn, ...args),
-  error: (...args: any[]) => performLog(LogLevel.ERROR, console.error, ...args),
+  debug: (message: string, context?: Record<string, any>) => sharedLogger.debug(message, context),
+  info: (message: string, context?: Record<string, any>) => sharedLogger.info(message, context),
+  warn: (message: string, context?: Record<string, any>) => sharedLogger.warn(message, context),
+  error: (message: string, error?: Error, context?: Record<string, any>) =>
+    sharedLogger.error(message, error, context),
+  setLogLevel: (level: LogLevel) => sharedLogger.setLogLevel(level),
+  getLogLevel: () => sharedLogger.getLogLevel(),
 }

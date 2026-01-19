@@ -27,14 +27,14 @@ class BetterHasuraHistory {
 
     elements.executeButton.addEventListener('click', this.handleExecuteClick)
     window.addEventListener('message', this.handleMessage)
-    logger.info('BetterHasuraHistory initialized and listening for messages.')
+    logger.debug('BetterHasuraHistory initialized and listening for messages.')
   }
 
   private handleMessage(event: MessageEvent): void {
     if (event.source !== window) return
 
     const { type, data } = event.data
-    logger.info(`BetterHasuraHistory received message: ${type}`)
+    logger.debug(`BetterHasuraHistory received message: ${type}`)
     if (type === 'BHH_EDITOR_CONTENT_RESPONSE') {
       try {
         const entry = HistoryService.addEntry(data)
@@ -42,7 +42,7 @@ class BetterHasuraHistory {
           logger.info(`New history entry added: ${entry.operationName}`)
         }
       } catch (error) {
-        logger.error('Error adding history entry from response', error)
+        logger.error('Error adding history entry from response', error as Error)
       }
     }
   }
@@ -58,7 +58,7 @@ class BetterHasuraHistory {
     }
 
     try {
-      logger.info('Initializing Better Hasura History extension...')
+      logger.debug('Initializing Better Hasura History extension...')
 
       const buttonContainer = this.domManager.createButtonContainer()
       const paneContainer = this.domManager.createPaneContainer()
@@ -79,9 +79,9 @@ class BetterHasuraHistory {
       this.toggleOriginalHistory(initialSettings.showOriginalHistory)
 
       this.isInitialized = true
-      logger.info('Extension initialization completed successfully')
+      logger.debug('Extension initialization completed successfully')
     } catch (error) {
-      logger.error('Extension initialization failed', error)
+      logger.error('Extension initialization failed', error as Error)
       this.cleanup()
       throw error
     }
@@ -97,7 +97,7 @@ class BetterHasuraHistory {
     }
 
     try {
-      logger.info('Destroying Better Hasura History extension...')
+      logger.debug('Destroying Better Hasura History extension...')
 
       this.vueAppManager.cleanup()
 
@@ -109,9 +109,9 @@ class BetterHasuraHistory {
       this.originalHistoryButton = null
 
       this.isInitialized = false
-      logger.info('Extension destruction completed successfully')
+      logger.debug('Extension destruction completed successfully')
     } catch (error) {
-      logger.error('Error during extension destruction', error)
+      logger.error('Error during extension destruction', error as Error)
       // Force cleanup even if there were errors
       this.cleanup()
     }
@@ -134,7 +134,7 @@ class BetterHasuraHistory {
   toggleOriginalHistory(visible: boolean): void {
     if (this.originalHistoryButton) {
       this.originalHistoryButton.style.display = visible ? '' : 'none'
-      logger.info(`Original history button visibility: ${visible ? 'shown' : 'hidden'}`)
+      logger.debug(`Original history button visibility: ${visible ? 'shown' : 'hidden'}`)
     } else {
       logger.warn('Original history button not found - cannot toggle visibility')
     }
@@ -147,7 +147,7 @@ class BetterHasuraHistory {
     try {
       window.postMessage({ type: 'BHH_GET_EDITOR_CONTENT' }, '*')
     } catch (error) {
-      logger.error('Error triggering content capture', error)
+      logger.error('Error triggering content capture', error as Error)
     }
   }
 

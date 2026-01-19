@@ -40,7 +40,7 @@ export class NavigationManager {
 
     // Perform an initial check in case the API explorer is already on the page.
     this.handleDOMChange()
-    logger.info('NavigationManager started.')
+    logger.debug('NavigationManager started.')
   }
 
   /**
@@ -50,7 +50,7 @@ export class NavigationManager {
     if (this.observer) {
       this.observer.disconnect()
       this.observer = null
-      logger.info('NavigationManager stopped.')
+      logger.debug('NavigationManager stopped.')
     }
   }
 
@@ -70,11 +70,11 @@ export class NavigationManager {
     const isVisible = this.isApiExplorerVisible()
 
     if (isVisible && !this.isExtensionActive) {
-      logger.info('API Explorer view detected. Initializing extension...')
+      logger.debug('API Explorer view detected. Initializing extension...')
       this.isExtensionActive = true
       this.initCallback()
     } else if (!isVisible && this.isExtensionActive) {
-      logger.info('API Explorer view is no longer visible. Cleaning up extension...')
+      logger.debug('API Explorer view is no longer visible. Cleaning up extension...')
       this.isExtensionActive = false
       this.destroyCallback()
     }

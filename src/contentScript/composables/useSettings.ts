@@ -16,7 +16,7 @@ export function useSettings() {
   const loadSettings = async () => {
     isLoading.value = true
     try {
-      const result = await chrome.storage.sync.get(EXTENSION_CONFIG.STORAGE_KEYS.SETTINGS)
+      const result = await chrome.storage.local.get(EXTENSION_CONFIG.STORAGE_KEYS.SETTINGS)
       if (result[EXTENSION_CONFIG.STORAGE_KEYS.SETTINGS]) {
         settings.value = {
           ...settings.value,
@@ -34,7 +34,7 @@ export function useSettings() {
   const updateSettings = async (newSettings: Partial<ExtensionSettings>) => {
     try {
       settings.value = { ...settings.value, ...newSettings }
-      await chrome.storage.sync.set({
+      await chrome.storage.local.set({
         [EXTENSION_CONFIG.STORAGE_KEYS.SETTINGS]: settings.value,
       })
       logger.debug('Settings updated', { newSettings })
@@ -54,7 +54,7 @@ export function useSettings() {
         showTimestamps: EXTENSION_CONFIG.DEFAULTS.SHOW_TIMESTAMPS,
         theme: EXTENSION_CONFIG.DEFAULTS.THEME,
       }
-      await chrome.storage.sync.set({
+      await chrome.storage.local.set({
         [EXTENSION_CONFIG.STORAGE_KEYS.SETTINGS]: settings.value,
       })
       logger.info('Settings reset to defaults')
