@@ -83,7 +83,6 @@ const {
   itemHeight: 37,
 })
 
-const historyListRef = containerProps.ref
 const selectedItemIndex = ref(-1)
 
 import { logger } from '@/contentScript/utils/logger'
