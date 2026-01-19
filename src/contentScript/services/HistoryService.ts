@@ -34,13 +34,14 @@ export class HistoryService {
 
     const uniqueName = HistoryService.generateUniqueName(operation_name)
 
+    const { determineOperationType } = useHistory()
     const entry: HistoryItem = {
       id: crypto.randomUUID(),
       operationName: uniqueName, // Mapped from operation_name
       variables: parsedVariables,
       timestamp: Date.now(),
       query: operation, // Use operation as query string
-      operationType: 'query', // Default or parsed? ParsedQuery usually has types? Assuming query for now or we need to extract it.
+      operationType: determineOperationType(operation),
     }
 
     logger.info(`Created new history entry: ${entry.operationName}`)

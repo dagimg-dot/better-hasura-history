@@ -31,6 +31,14 @@ export function useHistory() {
     return filtered.sort((a, b) => b.timestamp - a.timestamp)
   })
 
+  // Helper to determine operation type from query string
+  const determineOperationType = (query: string): 'query' | 'mutation' | 'subscription' => {
+    const trimmed = query.trim().toLowerCase()
+    if (trimmed.startsWith('mutation')) return 'mutation'
+    if (trimmed.startsWith('subscription')) return 'subscription'
+    return 'query'
+  }
+
   // Helper to migrate legacy entries
   const migrateLegacyEntry = (entry: any): HistoryItem | null => {
     // Check if it's a legacy entry
@@ -46,17 +54,22 @@ export function useHistory() {
         variables = entry.variables
       }
 
+      const query = entry.operation || ''
       return {
         id: entry.id || crypto.randomUUID(),
         operationName: entry.operation_name,
         variables: variables as Record<string, any>,
-        query: entry.operation,
+        query,
         timestamp: entry.createdAt ? new Date(entry.createdAt).getTime() : Date.now(),
-        operationType: 'query', // Default assumption
+        operationType: determineOperationType(query),
       }
     }
     // If it's already a valid format but maybe missing new fields
     if (entry.operationName && entry.query) {
+      // Ensure operationType is set if missing
+      if (!entry.operationType) {
+        entry.operationType = determineOperationType(entry.query)
+      }
       return entry as HistoryItem
     }
     return null
@@ -185,5 +198,6 @@ export function useHistory() {
     updateHistoryItem,
     importHistory,
     exportHistory,
+    determineOperationType,
   }
 }
