@@ -53,13 +53,13 @@
       @navigate-up="handleKeyNavigation('up')"
       @select-entry="handleSelectEntry"
     />
-    <div class="history-list" ref="historyListRef">
-      <ul>
+    <div v-bind="containerProps" class="history-list">
+      <ul v-bind="wrapperProps">
         <HistoryItem
-          v-for="(item, index) in filteredHistory"
-          :key="item.id"
-          :item="item"
-          :selected="index === selectedItemIndex"
+          v-for="virtualItem in list"
+          :key="virtualItem.data.id"
+          :item="virtualItem.data"
+          :selected="virtualItem.index === selectedItemIndex"
           @select-item="applyHistoryItem"
           @show-preview="handleMouseEnter"
           @hide-preview="handleMouseLeave"
@@ -81,6 +81,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useVirtualList } from '@vueuse/core'
 import { useExtensionState } from '@/contentScript/composables/useExtensionState'
 import { useHistory } from '@/contentScript/composables/useHistory'
 import type { HistoryItem as HistoryItemType } from '@/shared/types/history'
@@ -95,6 +96,19 @@ const {
   exportHistory,
   importHistory,
 } = useHistory()
+
+const {
+  list,
+  containerProps,
+  wrapperProps,
+  scrollTo: scrollVirtualList,
+} = useVirtualList(filteredHistory, {
+  itemHeight: 37,
+})
+
+const historyListRef = containerProps.ref
+const selectedItemIndex = ref(-1)
+
 import { logger } from '@/contentScript/utils/logger'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -213,9 +227,6 @@ const handleMouseMove = (event: MouseEvent) => {
   }
 }
 
-const selectedItemIndex = ref(-1)
-const historyListRef = ref<HTMLDivElement | null>(null)
-
 // Reset selection when search term changes
 watch(searchQuery, () => {
   selectedItemIndex.value = -1
@@ -246,17 +257,10 @@ const handleSelectEntry = () => {
   }
 }
 
-// Scroll the selected item into view
-watch(selectedItemIndex, async (newIndex) => {
-  if (newIndex < 0 || !historyListRef.value) return
-
-  await nextTick()
-  const selectedElement = historyListRef.value?.querySelector('li.selected')
-  if (selectedElement) {
-    selectedElement.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-    })
+// Scroll the selected item into view using virtual list scrollTo
+watch(selectedItemIndex, (newIndex) => {
+  if (newIndex >= 0) {
+    scrollVirtualList(newIndex)
   }
 })
 
@@ -313,7 +317,8 @@ onUnmounted(() => {
 
 .history-list {
   overflow-y: auto;
-  flex-grow: 1;
+  flex: 1;
+  min-height: 0;
 }
 
 .history-list ul {

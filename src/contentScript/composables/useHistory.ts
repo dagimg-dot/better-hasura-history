@@ -1,10 +1,12 @@
-import { computed, type Ref, ref } from 'vue'
+import { computed, type Ref, ref, shallowRef } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
 import type { HistoryItem, HistorySearchOptions } from '@/shared/types'
 
-// Singleton state
-const items = useStorage<HistoryItem[]>('better-hasura-history-items', [])
+// Singleton state - Using shallow: true for performance
+const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undefined, {
+  shallow: true,
+})
 const isLoading = ref(false)
 const searchQuery = ref('')
 const selectedOperationType = ref<'query' | 'mutation' | 'subscription' | 'all'>('all')
@@ -78,26 +80,30 @@ export function useHistory() {
   const importHistory = (data: any[]) => {
     let importedCount = 0
     try {
+      const newItems = [...items.value]
       data.forEach((entry) => {
         const migrated = migrateLegacyEntry(entry)
         if (migrated) {
           // Check for duplicates
-          const isDuplicate = items.value.some((existing) => existing.id === migrated.id)
+          const isDuplicate = newItems.some((existing) => existing.id === migrated.id)
           if (!isDuplicate) {
             // Also check for duplicate content (same name/query) to avoid clutter
-            const isContentDuplicate = items.value.some(
+            const isContentDuplicate = newItems.some(
               (existing) =>
                 existing.operationName === migrated.operationName &&
                 existing.query === migrated.query,
             )
 
             if (!isContentDuplicate) {
-              items.value.unshift(migrated)
+              newItems.unshift(migrated)
               importedCount++
             }
           }
         }
       })
+      if (importedCount > 0) {
+        items.value = newItems
+      }
       logger.info(`Imported ${importedCount} history items`)
     } catch (error) {
       logger.error('Failed to import history', error as Error)
@@ -127,9 +133,11 @@ export function useHistory() {
       const existingIndex = items.value.findIndex((existing) => existing.id === item.id)
 
       if (existingIndex >= 0) {
-        items.value[existingIndex] = item
+        const newItems = [...items.value]
+        newItems[existingIndex] = item
+        items.value = newItems
       } else {
-        items.value.unshift(item)
+        items.value = [item, ...items.value]
       }
 
       logger.debug('History item added', { itemId: item.id })
@@ -142,11 +150,8 @@ export function useHistory() {
 
   const removeHistoryItem = (id: string) => {
     try {
-      const index = items.value.findIndex((item) => item.id === id)
-      if (index >= 0) {
-        items.value.splice(index, 1)
-        logger.debug('History item removed', { itemId: id })
-      }
+      items.value = items.value.filter((item) => item.id !== id)
+      logger.debug('History item removed', { itemId: id })
     } catch (error) {
       logger.error('Failed to remove history item', error as Error, {
         itemId: id,
@@ -156,11 +161,8 @@ export function useHistory() {
 
   const updateHistoryItem = (id: string, updates: Partial<HistoryItem>) => {
     try {
-      const item = items.value.find((i) => i.id === id)
-      if (item) {
-        Object.assign(item, updates)
-        logger.debug('History item updated', { itemId: id })
-      }
+      items.value = items.value.map((item) => (item.id === id ? { ...item, ...updates } : item))
+      logger.debug('History item updated', { itemId: id })
     } catch (error) {
       logger.error('Failed to update history item', error as Error, {
         itemId: id,

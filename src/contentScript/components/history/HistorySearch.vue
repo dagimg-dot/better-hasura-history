@@ -10,14 +10,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 
 const searchTerm = ref('')
 const emit = defineEmits(['update:searchTerm', 'navigate-down', 'navigate-up', 'select-entry'])
 
-watch(searchTerm, (newVal) => {
-  emit('update:searchTerm', newVal)
-})
+watchDebounced(
+  searchTerm,
+  (newVal) => {
+    emit('update:searchTerm', newVal)
+  },
+  { debounce: 150, maxWait: 500 },
+)
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'ArrowDown') {

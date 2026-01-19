@@ -1,5 +1,5 @@
 <template>
-  <div class="operation-preview" :style="{ top: y + 'px', left: x + 'px' }">
+  <div class="operation-preview" :style="{ transform: `translate(${x}px, ${y}px)` }">
     <div class="preview-content">
       <div class="operation">
         <h4>Operation</h4>
@@ -29,6 +29,8 @@ defineProps<{
 <style scoped>
 .operation-preview {
   position: fixed;
+  top: 0;
+  left: 0;
   background-color: #fff;
   border: 1px solid #ccc;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);

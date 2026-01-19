@@ -26,7 +26,8 @@
         <button class="action-button" title="Edit name" @click.stop="startEditing">
           <!-- Pencil SVG -->
           <svg
-            xmlns="http://www.w3.org/i000/svg"
+            v-once
+            xmlns="http://www.w3.org/2000/svg"
             width="16"
             height="16"
             viewBox="0 0 24 24"
@@ -42,6 +43,7 @@
         <button class="action-button" title="Delete item" @click.stop="isConfirmingDelete = true">
           <!-- Trash Can SVG -->
           <svg
+            v-once
             xmlns="http://www.w3.org/2000/svg"
             width="16"
             height="16"
@@ -243,7 +245,7 @@ li.selected:hover {
 
 .edit-input {
   width: 100%;
-  padding: 2 gvpx;
+  padding: 2px;
   border: 1px solid #ccc;
   border-radius: 4px;
   box-sizing: border-box;
