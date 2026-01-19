@@ -109,11 +109,10 @@ export function useHistory() {
     try {
       const data = items.value.map((item) => ({
         id: item.id,
-        operation_name: item.operationName, // Keep legacy compatibility if desired, or just use new fields
-        operation: item.query, // Legacy compat
-        variables: JSON.stringify(item.variables), // Legacy compat
-        query: item.query,
         operationName: item.operationName,
+        query: item.query,
+        variables: item.variables,
+        operationType: item.operationType,
         createdAt: new Date(item.timestamp).toISOString(),
       }))
       return JSON.stringify(data, null, 2)
