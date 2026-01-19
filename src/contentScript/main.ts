@@ -27,12 +27,14 @@ class BetterHasuraHistory {
 
     elements.executeButton.addEventListener('click', this.handleExecuteClick)
     window.addEventListener('message', this.handleMessage)
+    logger.info('BetterHasuraHistory initialized and listening for messages.')
   }
 
   private handleMessage(event: MessageEvent): void {
     if (event.source !== window) return
 
     const { type, data } = event.data
+    logger.info(`BetterHasuraHistory received message: ${type}`)
     if (type === 'BHH_EDITOR_CONTENT_RESPONSE') {
       try {
         const entry = HistoryService.addEntry(data)

@@ -35,7 +35,7 @@ export default defineManifest({
   ],
   web_accessible_resources: [
     {
-      resources: ['img/*', 'src/contentScript/main-world.js'],
+      resources: ['img/*', 'src/contentScript/script-injector.js'],
       matches: ['<all_urls>'],
     },
   ],

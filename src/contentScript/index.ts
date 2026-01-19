@@ -3,7 +3,7 @@ import { logger } from './utils/logger'
 
 // Inject the bridge script into the main page context
 const script = document.createElement('script')
-script.src = chrome.runtime.getURL('src/contentScript/main-world.js')
+script.src = chrome.runtime.getURL('src/contentScript/script-injector.js')
 script.type = 'module'
 ;(document.head || document.documentElement).prepend(script)
 

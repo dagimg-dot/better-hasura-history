@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'build',
       rollupOptions: {
         input: {
-          'main-world': 'src/contentScript/main-world.js',
+          'script-injector': 'src/contentScript/script-injector.js',
         },
         output: {
           chunkFileNames: 'assets/chunk-[hash].js',
