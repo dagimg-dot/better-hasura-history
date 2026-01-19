@@ -212,9 +212,10 @@ const handleMouseMove = (event: MouseEvent) => {
   }
 }
 
-// Reset selection when search term changes
+// Reset selection and scroll to top when search term changes
 watch(searchQuery, () => {
   selectedItemIndex.value = -1
+  scrollVirtualList(0)
 })
 
 const updateSearchTerm = (newVal: string) => {
