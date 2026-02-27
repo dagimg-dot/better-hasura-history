@@ -1,9 +1,12 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
 import type { DOMElements, ExtensionState } from '@/shared/types'
 
+const isPaneOpenStorage = useStorage<boolean>('better-hasura-history-pane-open', false)
+
 const state = ref<ExtensionState>({
-  isActive: false,
+  isActive: isPaneOpenStorage.value,
   isInitialized: false,
   currentUrl: window.location.href,
   settings: {
@@ -12,6 +15,10 @@ const state = ref<ExtensionState>({
     showTimestamps: true,
     theme: 'auto',
   },
+})
+
+watch(isPaneOpenStorage, (val) => {
+  state.value.isActive = val
 })
 
 const domElements = ref<DOMElements>({
@@ -29,14 +36,15 @@ export function useExtensionState() {
   )
 
   const isPaneOpen = computed({
-    get: () => state.value.isActive,
+    get: () => isPaneOpenStorage.value,
     set: (val) => {
-      state.value.isActive = val
+      isPaneOpenStorage.value = val
     },
   })
 
   const activate = () => {
     try {
+      isPaneOpenStorage.value = true
       state.value.isActive = true
       logger.info('Extension activated')
     } catch (error) {
@@ -46,6 +54,7 @@ export function useExtensionState() {
 
   const deactivate = () => {
     try {
+      isPaneOpenStorage.value = false
       state.value.isActive = false
       logger.info('Extension deactivated')
     } catch (error) {
