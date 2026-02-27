@@ -84,12 +84,21 @@ export class DOMManager {
     button.style.marginLeft = '10px'
     button.style.cursor = 'pointer'
     button.style.fontSize = '12px'
-    button.style.border = '1px solid #ccc'
+    button.style.border = '1px solid #c3c3c3'
     button.style.borderRadius = '3px'
-    button.style.background = '#fff'
+    button.style.background = '#f3f3f3'
     button.style.padding = '2px 5px'
     button.style.textTransform = 'none'
     button.style.fontVariant = 'normal'
+    // Override GraphiQL styles: avoid bold, shadow, emboss; match clean dark-theme look.
+    button.style.setProperty(
+      'font-family',
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      'important',
+    )
+    button.style.setProperty('font-weight', '400', 'important')
+    button.style.setProperty('text-shadow', 'none', 'important')
+    button.style.setProperty('color', '#555555', 'important')
 
     // Stop propagation on mousedown to prevent parent resize/collapse behavior
     button.addEventListener('mousedown', (e) => {
