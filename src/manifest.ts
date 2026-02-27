@@ -1,7 +1,7 @@
 import { defineManifest } from '@crxjs/vite-plugin'
 import packageData from '../package.json'
 
-const isDev = process.env.NODE_ENV == 'development'
+const isDev = process.env.NODE_ENV === 'development'
 
 export default defineManifest({
   name: `${packageData.displayName || packageData.name}${isDev ? ` ➡️ Dev` : ''}`,
@@ -28,7 +28,7 @@ export default defineManifest({
   },
   content_scripts: [
     {
-      matches: ['*://*/console*'],
+      matches: ['*://*/', '*://*/console*'],
       js: ['src/contentScript/index.ts'],
       all_frames: true,
     },
