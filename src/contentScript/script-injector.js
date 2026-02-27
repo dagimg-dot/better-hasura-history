@@ -23,7 +23,7 @@ window.addEventListener(
         const queryEditorEl = document.querySelector('.query-editor .CodeMirror')
         const variablesEditorEl = document.querySelector('.variable-editor .CodeMirror')
 
-        if (queryEditorEl && queryEditorEl.CodeMirror && variablesEditorEl && variablesEditorEl.CodeMirror) {
+        if (queryEditorEl?.CodeMirror && variablesEditorEl && variablesEditorEl.CodeMirror) {
           clearInterval(interval)
 
           const queryEditor = queryEditorEl.CodeMirror
@@ -39,7 +39,7 @@ window.addEventListener(
     } else if (type === 'BHH_PRETTIFY_VARIABLES') {
       const variablesEditorEl = document.querySelector('.variable-editor .CodeMirror')
 
-      if (variablesEditorEl && variablesEditorEl.CodeMirror) {
+      if (variablesEditorEl?.CodeMirror) {
         const editor = variablesEditorEl.CodeMirror
         const currentVal = editor.getValue()
 
@@ -73,7 +73,12 @@ window.addEventListener(
       const queryEditorEl = document.querySelector('.query-editor .CodeMirror')
       const variablesEditorEl = document.querySelector('.variable-editor .CodeMirror')
 
-      if (queryEditorEl && queryEditorEl.CodeMirror && variablesEditorEl && variablesEditorEl.CodeMirror) {
+      if (
+        queryEditorEl &&
+        queryEditorEl.CodeMirror &&
+        variablesEditorEl &&
+        variablesEditorEl.CodeMirror
+      ) {
         const queryEditor = queryEditorEl.CodeMirror
         const variablesEditor = variablesEditorEl.CodeMirror
 

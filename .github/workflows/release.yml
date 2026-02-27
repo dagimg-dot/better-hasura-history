@@ -33,7 +33,7 @@ jobs:
       - name: Get package name
         id: package_name
         run: echo "PACKAGE_NAME=$(jq -r .name package.json)" >> $GITHUB_OUTPUT
-      
+
       - name: Get version
         id: version
         run: echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT

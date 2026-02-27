@@ -1,4 +1,4 @@
-import { logger as sharedLogger, type Logger } from '@/shared/logging'
+import { logger as sharedLogger } from '@/shared/logging'
 import type { LogLevel } from '@/shared/logging/Logger'
 
 /**
