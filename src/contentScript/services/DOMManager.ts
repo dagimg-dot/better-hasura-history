@@ -171,8 +171,8 @@ export class DOMManager {
           flexWrapper.appendChild(editorWrapper)
 
           // Set editor wrapper to take remaining space
-          editorWrapper.style.flex = '1'
-          editorWrapper.style.minWidth = '0'
+          ;(editorWrapper as HTMLElement).style.flex = '1'
+          ;(editorWrapper as HTMLElement).style.minWidth = '0'
 
           // Set pane styles
           container.style.flex = '0 0 280px'

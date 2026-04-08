@@ -7,8 +7,25 @@ import { useHistory } from './composables/useHistory'
 // Inject the bridge script into the main page context
 const script = document.createElement('script')
 script.src = chrome.runtime.getURL('src/contentScript/script-injector.js')
-// Reverting module type to classic script to avoid async-related document.write errors in Hasura UI
+// Reverting module type to classic script to avoid async-related document-write errors in Hasura UI
 ;(document.head || document.documentElement).prepend(script)
+
+// Listen for export requests from the injected script
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return
+
+  const { type, data } = event.data
+
+  if (type === 'BHH_EXPORT_HISTORY_REQUEST') {
+    logger.debug('Received export request from page script, forwarding to background')
+
+    // Forward to background script (fire and forget)
+    chrome.runtime.sendMessage({
+      type: 'BHH_DOWNLOAD_HISTORY',
+      data: data,
+    })
+  }
+})
 
 // --- Better Hasura History Lifecycle Management ---
 
@@ -64,7 +81,6 @@ try {
 
 // Listen for settings changes (e.g., enabling/disabling the extension).
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
-  console.log('[Better Hasura History] Storage change detected:', { changes, namespace })
   if (namespace !== 'local' || !changes.settings) {
     return
   }

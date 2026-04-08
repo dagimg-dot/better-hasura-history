@@ -130,12 +130,13 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const handleExport = () => {
   const json = exportHistory()
+  const isoString = new Date().toISOString().replace(/:/g, '-')
   window.postMessage(
     {
       type: 'BHH_EXPORT_HISTORY',
       data: {
         json,
-        filename: `better-hasura-history-backup-${new Date().toISOString().split('T')[0]}.json`,
+        filename: `bhh_export_${isoString}.json`,
       },
     },
     '*',

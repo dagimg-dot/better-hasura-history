@@ -26,6 +26,7 @@
     "bump-version": "node scripts/bump-version.js",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
+    "check:types": "vue-tsc --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix"
   },
