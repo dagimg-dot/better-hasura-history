@@ -18,7 +18,7 @@ export class DOMManager {
   }
 
   /**
-   * Create and insert the button container into the toolbar (GraphiQL) or near Run button (SQL).
+   * Create and insert the button container into the toolbar (GraphiQL) or near Database dropdown (SQL).
    */
   createButtonContainer(): HTMLDivElement {
     // Remove existing container if it exists
@@ -39,12 +39,42 @@ export class DOMManager {
         toolbar.appendChild(container)
       }
     } else if (this.pageType === 'sql') {
-      // For SQL page, find the Run button's parent and insert the button next to it
-      const runButton = document.querySelector('[data-test="run-sql"]') as HTMLElement
-      if (runButton) {
-        const parent = runButton.parentElement
-        if (parent) {
-          parent.insertBefore(container, runButton)
+      // For SQL page, wrap the database select and button in a flex container
+      const dataSourceSelect = document.querySelector(
+        'select[name="data-source"]',
+      ) as HTMLSelectElement
+
+      if (dataSourceSelect) {
+        // Find the column that contains the database dropdown (col-xs-8)
+        let columnEl: Element | null = dataSourceSelect
+        while (columnEl && !columnEl.classList.contains('col-xs-8')) {
+          columnEl = columnEl.parentElement
+        }
+
+        if (columnEl && columnEl.children.length > 0) {
+          // Get the select wrapper (second child - index 1)
+          const selectWrapper = columnEl.children[1]
+
+          if (selectWrapper) {
+            // Create a flex wrapper for select and button
+            const flexWrapper = document.createElement('div')
+            flexWrapper.style.display = 'flex'
+            flexWrapper.style.flexDirection = 'row'
+            flexWrapper.style.alignItems = 'center'
+            flexWrapper.style.gap = '13px'
+
+            // Replace select wrapper with flex wrapper
+            columnEl.replaceChild(flexWrapper, selectWrapper)
+
+            // Add select wrapper to flex wrapper
+            flexWrapper.appendChild(selectWrapper)
+
+            // Set button container styles
+            container.style.margin = '0'
+
+            // Add button container to flex wrapper after select
+            flexWrapper.appendChild(container)
+          }
         }
       }
     }
@@ -74,28 +104,59 @@ export class DOMManager {
         graphiqlContainer.appendChild(container)
       }
     } else if (this.pageType === 'sql') {
-      // For SQL page, we need to find the right structure
-      // Looking at the HTML, there's a div with class "_1yn2Hu_FpcuAMsFTAk5-Fq" that contains everything
-      // We want to add a pane to the right of the SQL editor
-      const rootContainer = document.querySelector('.rZwcGpymS1jusCiXDYcLo') as HTMLElement
-      if (rootContainer) {
-        // Find the main content area and insert after the SQL editor section
-        const sqlEditorSection = rootContainer.querySelector('._4_8EK7RlaQT8JQZ_hBhjj')
-        if (sqlEditorSection) {
-          const children = sqlEditorSection.children
-          // Insert after all current children to create a right pane
-          for (let i = 0; i < children.length; i++) {
-            const child = children[i]
-            const classes = child.className || ''
-            if (classes.includes('col-xs-8') && classes.includes('_1GPRhKMAouUv16NYEc4Dwr')) {
-              // This is likely the SQL editor column - insert after it
-              sqlEditorSection.insertBefore(container, child.nextSibling)
-              break
+      // For SQL page, we need to wrap both pane and editor in a flex container
+      const sqlEditor = document.getElementById('raw_sql')
+
+      if (sqlEditor) {
+        // Find the direct child of col-xs-10 that contains the editor
+        let columnEl: Element | null = sqlEditor
+        while (columnEl && !columnEl.classList.contains('col-xs-10')) {
+          columnEl = columnEl.parentElement
+        }
+
+        if (columnEl && columnEl.children.length > 0) {
+          // Get the first child (editor wrapper)
+          const editorWrapper = columnEl.children[0]
+
+          // Create a flex wrapper
+          const flexWrapper = document.createElement('div')
+          flexWrapper.style.display = 'flex'
+          flexWrapper.style.flexDirection = 'row'
+          flexWrapper.style.width = '100%'
+          flexWrapper.style.alignItems = 'flex-start'
+          flexWrapper.style.gap = '20px'
+
+          // Replace the editor wrapper with our flex wrapper
+          columnEl.replaceChild(flexWrapper, editorWrapper)
+
+          // Add the editor wrapper to the flex wrapper
+          flexWrapper.appendChild(editorWrapper)
+
+          // Set editor wrapper to take remaining space
+          editorWrapper.style.flex = '1'
+          editorWrapper.style.minWidth = '0'
+
+          // Set pane styles
+          container.style.flex = '0 0 280px'
+          container.style.minWidth = '280px'
+          container.style.maxWidth = '280px'
+          container.style.alignSelf = 'flex-start'
+          container.style.marginTop = '20px'
+          container.style.height = sqlEditor.style.height || '285px'
+
+          // Add pane to the flex wrapper
+          flexWrapper.insertBefore(container, editorWrapper)
+
+          // Sync pane height with editor height using ResizeObserver
+          const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              container.style.height = `${entry.contentRect.height}px`
             }
-          }
+          })
+          resizeObserver.observe(sqlEditor)
         }
       }
-      // Fallback: just append to container if no suitable insertion point found
+      // Fallback
       if (!container.parentElement) {
         ;(this.container as Element).appendChild(container)
       }
