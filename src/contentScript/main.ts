@@ -27,13 +27,18 @@ class BetterHasuraHistory {
   private originalHistoryButton: HTMLElement | null = null
   private isInitialized = false
   private pageType: PageType
+  private graphiqlToolbar: Element | null = null
+  private graphiqlContainer: Element | null = null
 
   constructor(elements: RequiredElements, pageType: PageType) {
     this.pageType = pageType
 
     if (pageType === 'graphiql') {
       const graphiqlElements = elements as GraphiQLElements
-      this.domManager = new DOMManager(graphiqlElements.graphiqlContainer, pageType)
+      this.graphiqlToolbar = graphiqlElements.toolbar
+      this.graphiqlContainer = graphiqlElements.graphiqlContainer
+      // Use toolbar for button placement
+      this.domManager = new DOMManager(graphiqlElements.toolbar, pageType)
       this.handleExecuteClick = this.handleExecuteClick.bind(this)
       this.handleMessage = this.handleMessage.bind(this)
       graphiqlElements.executeButton.addEventListener('click', this.handleExecuteClick)
@@ -97,6 +102,11 @@ class BetterHasuraHistory {
 
     try {
       logger.debug(`Initializing Better Hasura History extension for ${this.pageType}...`)
+
+      // For GraphiQL, set the container elements before creating button/pane
+      if (this.pageType === 'graphiql' && this.graphiqlToolbar && this.graphiqlContainer) {
+        this.domManager.setContainers(this.graphiqlToolbar, this.graphiqlContainer)
+      }
 
       const buttonContainer = this.domManager.createButtonContainer()
       const paneContainer = this.domManager.createPaneContainer()

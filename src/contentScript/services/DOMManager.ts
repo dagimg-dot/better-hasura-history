@@ -9,12 +9,22 @@ export class DOMManager {
   private static readonly PANE_CONTAINER_ID = 'better-history-pane-container'
 
   private pageType: PageType
+  private buttonContainerEl: Element | null = null
+  private paneContainerEl: Element | null = null
 
   constructor(
     private readonly container: Element,
     pageType: PageType,
   ) {
     this.pageType = pageType
+  }
+
+  /**
+   * Set separate container elements for button and pane (used for GraphiQL)
+   */
+  setContainers(buttonContainer: Element, paneContainer: Element): void {
+    this.buttonContainerEl = buttonContainer
+    this.paneContainerEl = paneContainer
   }
 
   /**
@@ -28,8 +38,22 @@ export class DOMManager {
     container.id = DOMManager.BUTTON_CONTAINER_ID
 
     if (this.pageType === 'graphiql') {
+      // Use stored button container element if available (passed from main.ts)
+      if (this.buttonContainerEl) {
+        // Insert at position 1 (after prettify button), same as original behavior
+        const toolbar = this.buttonContainerEl as Element
+        const insertPosition = Math.min(1, toolbar.children.length)
+        const referenceElement = toolbar.children[insertPosition]
+
+        if (referenceElement) {
+          toolbar.insertBefore(container, referenceElement)
+        } else {
+          toolbar.appendChild(container)
+        }
+        return container
+      }
+      // Fallback: use container
       const toolbar = this.container as Element
-      // Insert after the first child (after the prettify button)
       const insertPosition = Math.min(1, toolbar.children.length)
       const referenceElement = toolbar.children[insertPosition]
 
@@ -93,8 +117,22 @@ export class DOMManager {
     container.id = DOMManager.PANE_CONTAINER_ID
 
     if (this.pageType === 'graphiql') {
+      // Use stored pane container element if available (passed from main.ts)
+      if (this.paneContainerEl) {
+        // Insert at position 1 (same as original behavior - before explorer pane)
+        const graphiqlContainer = this.paneContainerEl as Element
+        const insertPosition = Math.min(1, graphiqlContainer.children.length)
+        const referenceElement = graphiqlContainer.children[insertPosition]
+
+        if (referenceElement) {
+          graphiqlContainer.insertBefore(container, referenceElement)
+        } else {
+          graphiqlContainer.appendChild(container)
+        }
+        return container
+      }
+      // Fallback: use container
       const graphiqlContainer = this.container as Element
-      // Insert before the last child (explorer pane)
       const lastPosition = Math.max(0, graphiqlContainer.children.length - 1)
       const referenceElement = graphiqlContainer.children[lastPosition]
 
