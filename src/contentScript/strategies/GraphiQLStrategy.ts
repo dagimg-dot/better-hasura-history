@@ -16,8 +16,8 @@ export class GraphiQLStrategy implements PageStrategy {
   }
 
   getPaneInsertPosition(container: Element): Element | null {
-    const lastPosition = Math.max(0, container.children.length - 1)
-    return container.children[lastPosition] || null
+    const insertPosition = Math.min(1, container.children.length)
+    return container.children[insertPosition] || null
   }
 
   createButtonElement(): HTMLDivElement {

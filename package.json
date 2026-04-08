@@ -28,7 +28,8 @@
     "fmt:check": "oxfmt --check",
     "check:types": "vue-tsc --noEmit",
     "lint": "oxlint",
-    "lint:fix": "oxlint --fix"
+    "lint:fix": "oxlint --fix",
+    "check": "pnpm check:types && pnpm lint:fix && pnpm fmt"
   },
   "dependencies": {
     "@vueuse/core": "^13.6.0",

@@ -14,6 +14,7 @@ export class BetterHasuraHistory {
   constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: string) {
     this.strategy = createPageStrategy(pageType as 'graphiql' | 'sql')
     this.domManager = new DOMManager(elements.buttonContainer, this.strategy)
+    this.domManager.setContainers(elements.buttonContainer, elements.paneContainer)
 
     if (pageType === 'graphiql') {
       const runButton = document.querySelector('.execute-button')
