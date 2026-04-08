@@ -67,7 +67,6 @@ const { isPaneOpen, pageType } = useExtensionState()
 const {
   filteredItems: filteredHistory,
   searchQuery,
-  items,
   exportHistory,
   importHistory,
   clearHistory,
@@ -82,7 +81,6 @@ const {
   itemHeight: 37,
 })
 
-// Initialize pane styles on mount based on isPaneOpen state
 const initializePaneStyles = () => {
   const paneContainer = document.getElementById('better-history-pane-container')
   if (paneContainer) {
@@ -100,7 +98,6 @@ const initializePaneStyles = () => {
   }
 }
 
-// Watch isPaneOpen to adjust flex layout when pane is toggled
 watch(isPaneOpen, (isOpen) => {
   const paneContainer = document.getElementById('better-history-pane-container')
   if (paneContainer) {
@@ -168,7 +165,6 @@ const handleImport = (event: Event) => {
       logger.error('Failed to import file', error as Error)
       alert('Failed to parse backup file')
     } finally {
-      // Reset input
       input.value = ''
     }
   }
@@ -188,18 +184,14 @@ const applyHistoryItem = async (item: HistoryItemType) => {
   const currentPage = pageType.value
 
   if (currentPage === 'sql' || item.operationType === 'sql') {
-    // Apply SQL history item
     window.postMessage(
       {
         type: 'BHH_APPLY_SQL_HISTORY_ITEM',
-        data: {
-          sql: item.query,
-        },
+        data: { sql: item.query },
       },
       '*',
     )
   } else {
-    // Apply GraphQL history item
     window.postMessage(
       {
         type: 'BHH_APPLY_HISTORY_ITEM',
@@ -252,7 +244,6 @@ const handleMouseEnter = async (event: MouseEvent, item: HistoryItemType) => {
       new Date(item.timestamp).toDateString() + ', ' + new Date(item.timestamp).toLocaleTimeString()
 
     await nextTick()
-
     updateTooltipPosition(event)
   }
 }
@@ -267,7 +258,6 @@ const handleMouseMove = (event: MouseEvent) => {
   }
 }
 
-// Reset selection and scroll to top when search term changes
 watch(searchQuery, () => {
   selectedItemIndex.value = -1
   scrollVirtualList(0)
@@ -285,7 +275,6 @@ const handleKeyNavigation = (direction: 'up' | 'down') => {
   if (direction === 'down') {
     newIndex = (newIndex + 1) % list.length
   } else {
-    // 'up'
     newIndex = (newIndex - 1 + list.length) % list.length
   }
   selectedItemIndex.value = newIndex
@@ -298,7 +287,6 @@ const handleSelectEntry = () => {
   }
 }
 
-// Scroll the selected item into view using virtual list scrollTo
 watch(selectedItemIndex, (newIndex) => {
   if (newIndex >= 0) {
     scrollVirtualList(newIndex)

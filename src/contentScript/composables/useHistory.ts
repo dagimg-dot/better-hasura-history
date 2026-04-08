@@ -1,10 +1,9 @@
 import { computed, ref } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
-import type { HistoryItem } from '@/shared/types'
+import type { HistoryItem } from '@/shared/types/history'
 import type { PageType } from '../services/NavigationManager'
 
-// Singleton state - Using shallow: true for performance
 const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undefined, {
   shallow: true,
 })
@@ -18,7 +17,6 @@ export function useHistory() {
   const filteredItems = computed(() => {
     let filtered = items.value
 
-    // Filter by search query
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
       filtered = filtered.filter(
@@ -28,45 +26,33 @@ export function useHistory() {
       )
     }
 
-    // Filter by operation type
     if (selectedOperationType.value === 'graphql') {
-      // Show only GraphQL types (query, mutation, subscription) - exclude sql
       filtered = filtered.filter((item) => item.operationType !== 'sql')
-    } else if (selectedOperationType.value === 'all') {
-      // Show all types
-    } else {
-      // Show specific type
+    } else if (selectedOperationType.value !== 'all') {
       filtered = filtered.filter((item) => item.operationType === selectedOperationType.value)
     }
 
     return filtered.sort((a, b) => b.timestamp - a.timestamp)
   })
 
-  // Set operation type filter based on page type
   const setPageFilter = (pageType: PageType) => {
     if (pageType === 'sql') {
       selectedOperationType.value = 'sql'
     } else if (pageType === 'graphiql') {
-      // For GraphiQL, show only GraphQL types (query, mutation, subscription) - exclude sql
       selectedOperationType.value = 'graphql'
     } else {
       selectedOperationType.value = 'all'
     }
-    logger.debug(`Page filter set to: ${selectedOperationType.value}`)
   }
 
-  // Filter items by operation type (used for page-specific filtering)
   const filterByType = (
     type: 'query' | 'mutation' | 'subscription' | 'sql' | 'graphql',
   ): HistoryItem[] => {
-    if (type === 'graphql') {
-      // Return all GraphQL types
+    if (type === 'graphql')
       return filteredItems.value.filter((item) => item.operationType !== 'sql')
-    }
     return filteredItems.value.filter((item) => item.operationType === type)
   }
 
-  // Helper to determine operation type from query string
   const determineOperationType = (query: string): 'query' | 'mutation' | 'subscription' => {
     const trimmed = query.trim().toLowerCase()
     if (trimmed.startsWith('mutation')) return 'mutation'
@@ -74,14 +60,12 @@ export function useHistory() {
     return 'query'
   }
 
-  // Helper to migrate legacy entries
   const migrateLegacyEntry = (entry: any): HistoryItem | null => {
-    // Check if it's a legacy entry
     if (entry.operation_name && typeof entry.operation_name === 'string') {
       let variables = {}
       if (typeof entry.variables === 'string') {
         try {
-          variables = JSON.parse(entry.variables) as Record<string, any>
+          variables = JSON.parse(entry.variables)
         } catch (e) {
           logger.warn('Failed to parse legacy variables', { error: e })
         }
@@ -89,19 +73,17 @@ export function useHistory() {
         variables = entry.variables
       }
 
-      const query = entry.operation || ''
       return {
         id: entry.id || crypto.randomUUID(),
         operationName: entry.operation_name,
         variables: variables as Record<string, any>,
-        query,
+        query: entry.operation || '',
         timestamp: entry.createdAt ? new Date(entry.createdAt).getTime() : Date.now(),
-        operationType: determineOperationType(query),
+        operationType: determineOperationType(entry.operation || ''),
       }
     }
-    // If it's already a valid format but maybe missing new fields
+
     if (entry.operationName && entry.query) {
-      // Ensure operationType is set if missing
       if (!entry.operationType) {
         entry.operationType = determineOperationType(entry.query)
       }
@@ -117,16 +99,13 @@ export function useHistory() {
       data.forEach((entry) => {
         const migrated = migrateLegacyEntry(entry)
         if (migrated) {
-          // Check for duplicates
           const isDuplicate = newItems.some((existing) => existing.id === migrated.id)
           if (!isDuplicate) {
-            // Also check for duplicate content (same name/query) to avoid clutter
             const isContentDuplicate = newItems.some(
               (existing) =>
                 existing.operationName === migrated.operationName &&
                 existing.query === migrated.query,
             )
-
             if (!isContentDuplicate) {
               newItems.unshift(migrated)
               importedCount++
@@ -134,10 +113,7 @@ export function useHistory() {
           }
         }
       })
-      if (importedCount > 0) {
-        items.value = newItems
-      }
-      logger.info(`Imported ${importedCount} history items`)
+      if (importedCount > 0) items.value = newItems
     } catch (error) {
       logger.error('Failed to import history', error as Error)
     }
@@ -166,7 +142,6 @@ export function useHistory() {
   const addHistoryItem = (item: HistoryItem) => {
     try {
       const existingIndex = items.value.findIndex((existing) => existing.id === item.id)
-
       if (existingIndex >= 0) {
         const newItems = [...items.value]
         newItems[existingIndex] = item
@@ -174,48 +149,36 @@ export function useHistory() {
       } else {
         items.value = [item, ...items.value]
       }
-
-      logger.debug('History item added', { itemId: item.id })
     } catch (error) {
-      logger.error('Failed to add history item', error as Error, {
-        itemId: item.id,
-      })
+      logger.error('Failed to add history item', error as Error, { itemId: item.id })
     }
   }
 
   const removeHistoryItem = (id: string) => {
     try {
       items.value = items.value.filter((item) => item.id !== id)
-      logger.debug('History item removed', { itemId: id })
     } catch (error) {
-      logger.error('Failed to remove history item', error as Error, {
-        itemId: id,
-      })
+      logger.error('Failed to remove history item', error as Error, { itemId: id })
     }
   }
 
   const updateHistoryItem = (id: string, updates: Partial<HistoryItem>) => {
     try {
       items.value = items.value.map((item) => (item.id === id ? { ...item, ...updates } : item))
-      logger.debug('History item updated', { itemId: id })
     } catch (error) {
-      logger.error('Failed to update history item', error as Error, {
-        itemId: id,
-      })
+      logger.error('Failed to update history item', error as Error, { itemId: id })
     }
   }
 
   const clearHistory = () => {
     try {
       items.value = []
-      logger.info('History cleared')
     } catch (error) {
       logger.error('Failed to clear history', error as Error)
     }
   }
 
   const loadHistory = async () => {
-    // With useStorage, we don't need manual loading, but we can keep this for interface compatibility
     isLoading.value = true
     await new Promise((r) => setTimeout(r, 50))
     isLoading.value = false

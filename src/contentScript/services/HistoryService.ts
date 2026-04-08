@@ -1,231 +1,92 @@
 import { useHistory } from '@/contentScript/composables/useHistory'
 import type { HistoryItem } from '@/shared/types/history'
-import type { ParsedQuery } from '@/contentScript/types'
 import { logger } from '@/contentScript/utils/logger'
 
-/**
- * Parsed SQL data from the script injector.
- */
-export interface ParsedSql {
-  sql: string
-  operation_name: string
+export interface EntryInput {
+  operationName: string
+  query: string
+  variables?: Record<string, any>
+  operationType: 'query' | 'mutation' | 'subscription' | 'sql'
 }
 
-/**
- * Service for managing history entries business logic.
- * Handles creation, validation, and duplicate detection of history entries.
- */
 export class HistoryService {
-  /**
-   * Create a new history entry from parsed query data.
-   */
-  static createEntry(parsed: ParsedQuery): HistoryItem {
-    if (!parsed.operation_name || !parsed.operation) {
-      throw new Error('Invalid parsed query: missing required fields')
-    }
-
-    const { operation_name, operation, variables } = parsed
-
-    let parsedVariables: Record<string, any> = {}
-    if (variables) {
-      try {
-        parsedVariables = JSON.parse(variables)
-      } catch (e) {
-        logger.warn('Failed to parse variables JSON', { error: e })
-        parsedVariables = {}
-      }
-    }
-
-    if (HistoryService.isDuplicate(operation, parsedVariables)) {
-      throw new Error('Duplicate entry')
-    }
-
-    const uniqueName = HistoryService.generateUniqueName(operation_name)
-
-    const { determineOperationType } = useHistory()
-    const entry: HistoryItem = {
-      id: crypto.randomUUID(),
-      operationName: uniqueName, // Mapped from operation_name
-      variables: parsedVariables,
-      timestamp: Date.now(),
-      query: operation, // Use operation as query string
-      operationType: determineOperationType(operation),
-    }
-
-    logger.info(`Created new history entry: ${entry.operationName}`)
-    return entry
-  }
-
-  /**
-   * Create a new SQL history entry from parsed SQL data.
-   */
-  static createSqlEntry(parsed: ParsedSql): HistoryItem {
-    if (!parsed.sql) {
-      throw new Error('Invalid parsed SQL: missing sql field')
-    }
-
-    const { sql, operation_name } = parsed
-
-    if (HistoryService.isSqlDuplicate(sql)) {
-      throw new Error('Duplicate SQL entry')
-    }
-
-    const uniqueName = HistoryService.generateUniqueName(operation_name)
-
-    const entry: HistoryItem = {
-      id: crypto.randomUUID(),
-      operationName: uniqueName,
-      variables: undefined,
-      timestamp: Date.now(),
-      query: sql,
-      operationType: 'sql',
-    }
-
-    logger.info(`Created new SQL history entry: ${entry.operationName}`)
-    return entry
-  }
-
-  /**
-   * Add a new SQL entry to the history.
-   */
-  static addSqlEntry(parsed: ParsedSql): HistoryItem | null {
+  static addEntry(input: EntryInput): HistoryItem | null {
     const { addHistoryItem } = useHistory()
+
     try {
-      const entry = HistoryService.createSqlEntry(parsed)
-      addHistoryItem(entry)
-      return entry
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Duplicate SQL entry') {
-        logger.info('Skipping duplicate SQL history entry')
+      if (this.isDuplicate(input.query, input.variables, input.operationType)) {
+        logger.info('Skipping duplicate entry')
         return null
       }
-      logger.error('Failed to create SQL history entry', error as Error)
-      throw error
-    }
-  }
 
-  /**
-   * Add a new entry to the history.
-   */
-  static addEntry(parsed: ParsedQuery): HistoryItem | null {
-    const { addHistoryItem } = useHistory()
-    try {
-      const entry = HistoryService.createEntry(parsed)
+      const uniqueName = this.generateUniqueName(input.operationName)
+
+      const entry: HistoryItem = {
+        id: crypto.randomUUID(),
+        operationName: uniqueName,
+        query: input.query,
+        variables: input.variables,
+        operationType: input.operationType,
+        timestamp: Date.now(),
+      }
+
       addHistoryItem(entry)
+      logger.info(`Created history entry: ${entry.operationName}`)
       return entry
     } catch (error) {
-      if (error instanceof Error && error.message === 'Duplicate entry') {
-        logger.info('Skipping duplicate history entry')
-        return null
-      }
       logger.error('Failed to create history entry', error as Error)
-      throw error
+      return null
     }
   }
 
-  /**
-   * Check if an entry with the same operation and variables already exists.
-   */
-  private static isDuplicate(operation: string, variables?: Record<string, any>): boolean {
-    const { items } = useHistory()
-    const normalizedVariables = JSON.stringify(variables || {})
-    return items.value.some(
-      (entry) =>
-        entry.query === operation && JSON.stringify(entry.variables || {}) === normalizedVariables,
-    )
-  }
-
-  /**
-   * Check if a SQL entry with the same query already exists.
-   */
-  private static isSqlDuplicate(sql: string): boolean {
-    const { items } = useHistory()
-    return items.value.some((entry) => entry.query === sql && entry.operationType === 'sql')
-  }
-
-  /**
-   * Generate a unique name based on existing entries.
-   */
-  private static generateUniqueName(baseName: string): string {
-    const relatedEntries = HistoryService.getRelatedEntries(baseName)
-    const existingNames = new Set(relatedEntries.map((entry) => entry.operationName))
-
-    if (!existingNames.has(baseName)) {
-      return baseName
-    }
-
-    // Find the next available suffix
-    let suffix = 1
-    while (existingNames.has(`${baseName}_${suffix}`)) {
-      suffix++
-    }
-
-    return `${baseName}_${suffix}`
-  }
-
-  /**
-   * Get all entries related to a base operation name.
-   */
-  private static getRelatedEntries(baseName: string): HistoryItem[] {
-    const { items } = useHistory()
-    return items.value.filter(
-      (entry) =>
-        entry.operationName === baseName || entry.operationName?.startsWith(`${baseName}_`),
-    )
-  }
-
-  /**
-   * Remove an entry from history by ID.
-   */
   static removeEntry(id: string): boolean {
     const { removeHistoryItem, items } = useHistory()
     const initialLength = items.value.length
     removeHistoryItem(id)
-    const removed = items.value.length < initialLength
-
-    if (removed) {
-      logger.info(`Removed history entry with ID: ${id}`)
-    }
-
-    return removed
+    return items.value.length < initialLength
   }
 
-  /**
-   * Clear all history entries.
-   */
   static clearHistory(): void {
     const { clearHistory, items } = useHistory()
     const count = items.value.length
     clearHistory()
-    logger.info(`Cleared ${count} history entries`)
+    logger.info(`Cleared ${count} entries`)
   }
 
-  /**
-   * Get history entries count.
-   */
-  static getCount(): number {
-    const { items } = useHistory()
-    return items.value.length
-  }
-
-  /**
-   * Update an existing entry's operation name.
-   */
   static updateEntryName(id: string, newName: string): boolean {
-    if (!newName.trim()) {
-      throw new Error('Entry name cannot be empty')
-    }
-
     const { updateHistoryItem, items } = useHistory()
     const entry = items.value.find((e) => e.id === id)
-    if (!entry) {
-      return false
-    }
-
-    const oldName = entry.operationName
+    if (!entry) return false
     updateHistoryItem(id, { operationName: newName.trim() })
-    logger.info(`Updated entry name from "${oldName}" to "${newName}"`)
-
     return true
+  }
+
+  private static isDuplicate(
+    query: string,
+    variables?: Record<string, any>,
+    operationType?: string,
+  ): boolean {
+    const { items } = useHistory()
+    return items.value.some((entry) => {
+      if (entry.query !== query) return false
+      if (entry.operationType === 'sql') return entry.operationType === operationType
+      return JSON.stringify(entry.variables || {}) === JSON.stringify(variables || {})
+    })
+  }
+
+  private static generateUniqueName(baseName: string): string {
+    const { items } = useHistory()
+    const related = items.value.filter(
+      (e) => e.operationName === baseName || e.operationName?.startsWith(`${baseName}_`),
+    )
+    const existingNames = new Set(related.map((e) => e.operationName))
+
+    if (!existingNames.has(baseName)) return baseName
+
+    let suffix = 1
+    while (existingNames.has(`${baseName}_${suffix}`)) {
+      suffix++
+    }
+    return `${baseName}_${suffix}`
   }
 }
