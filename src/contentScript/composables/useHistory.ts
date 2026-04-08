@@ -10,7 +10,9 @@ const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undef
 })
 const isLoading = ref(false)
 const searchQuery = ref('')
-const selectedOperationType = ref<'query' | 'mutation' | 'subscription' | 'sql' | 'all'>('all')
+const selectedOperationType = ref<
+  'query' | 'mutation' | 'subscription' | 'sql' | 'graphql' | 'all'
+>('all')
 
 export function useHistory() {
   const filteredItems = computed(() => {
@@ -27,7 +29,13 @@ export function useHistory() {
     }
 
     // Filter by operation type
-    if (selectedOperationType.value !== 'all') {
+    if (selectedOperationType.value === 'graphql') {
+      // Show only GraphQL types (query, mutation, subscription) - exclude sql
+      filtered = filtered.filter((item) => item.operationType !== 'sql')
+    } else if (selectedOperationType.value === 'all') {
+      // Show all types
+    } else {
+      // Show specific type
       filtered = filtered.filter((item) => item.operationType === selectedOperationType.value)
     }
 
@@ -39,8 +47,8 @@ export function useHistory() {
     if (pageType === 'sql') {
       selectedOperationType.value = 'sql'
     } else if (pageType === 'graphiql') {
-      // For GraphiQL, show all GraphQL types (query, mutation, subscription)
-      selectedOperationType.value = 'all'
+      // For GraphiQL, show only GraphQL types (query, mutation, subscription) - exclude sql
+      selectedOperationType.value = 'graphql'
     } else {
       selectedOperationType.value = 'all'
     }
@@ -48,7 +56,13 @@ export function useHistory() {
   }
 
   // Filter items by operation type (used for page-specific filtering)
-  const filterByType = (type: 'query' | 'mutation' | 'subscription' | 'sql'): HistoryItem[] => {
+  const filterByType = (
+    type: 'query' | 'mutation' | 'subscription' | 'sql' | 'graphql',
+  ): HistoryItem[] => {
+    if (type === 'graphql') {
+      // Return all GraphQL types
+      return filteredItems.value.filter((item) => item.operationType !== 'sql')
+    }
     return filteredItems.value.filter((item) => item.operationType === type)
   }
 

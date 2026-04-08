@@ -4,12 +4,17 @@ import { logger } from '@/shared/logging'
 import type { DOMElements, ExtensionState } from '@/shared/types'
 import type { PageType } from '../services/NavigationManager'
 
-const isPaneOpenStorage = useStorage<boolean>('better-hasura-history-pane-open', false)
+// Separate storage keys for each page
+const isPaneOpenGraphiqlStorage = useStorage<boolean>(
+  'better-hasura-history-pane-open-graphiql',
+  false,
+)
+const isPaneOpenSqlStorage = useStorage<boolean>('better-hasura-history-pane-open-sql', false)
 
 const currentPageType = ref<PageType>('unknown')
 
 const state = ref<ExtensionState>({
-  isActive: isPaneOpenStorage.value,
+  isActive: false,
   isInitialized: false,
   currentUrl: window.location.href,
   settings: {
@@ -20,9 +25,17 @@ const state = ref<ExtensionState>({
   },
 })
 
-watch(isPaneOpenStorage, (val) => {
-  state.value.isActive = val
-})
+watch(
+  () => [isPaneOpenGraphiqlStorage.value, isPaneOpenSqlStorage.value],
+  () => {
+    // Update state.isActive based on current page's pane state
+    if (currentPageType.value === 'sql') {
+      state.value.isActive = isPaneOpenSqlStorage.value
+    } else {
+      state.value.isActive = isPaneOpenGraphiqlStorage.value
+    }
+  },
+)
 
 const domElements = ref<DOMElements>({
   buttonContainer: null,
@@ -38,10 +51,23 @@ export function useExtensionState() {
       domElements.value.paneContainer,
   )
 
+  // Get the appropriate storage key based on current page type
+  const getCurrentStorage = () => {
+    if (currentPageType.value === 'sql') {
+      return isPaneOpenSqlStorage
+    }
+    return isPaneOpenGraphiqlStorage
+  }
+
   const isPaneOpen = computed({
-    get: () => isPaneOpenStorage.value,
-    set: (val) => {
-      isPaneOpenStorage.value = val
+    get() {
+      const storage = getCurrentStorage()
+      return storage.value
+    },
+    set(val) {
+      const storage = getCurrentStorage()
+      storage.value = val
+      state.value.isActive = val
     },
   })
 
@@ -49,13 +75,24 @@ export function useExtensionState() {
 
   const setPageType = (type: PageType) => {
     currentPageType.value = type
+    // Update isActive to reflect current page's state
+    if (type === 'sql') {
+      state.value.isActive = isPaneOpenSqlStorage.value
+    } else {
+      state.value.isActive = isPaneOpenGraphiqlStorage.value
+    }
     logger.debug(`Page type set to: ${type}`)
   }
 
   const activate = () => {
     try {
-      isPaneOpenStorage.value = true
-      state.value.isActive = true
+      if (currentPageType.value === 'sql') {
+        isPaneOpenSqlStorage.value = true
+        state.value.isActive = true
+      } else {
+        isPaneOpenGraphiqlStorage.value = true
+        state.value.isActive = true
+      }
       logger.info('Extension activated')
     } catch (error) {
       logger.error('Failed to activate extension', error as Error)
@@ -64,8 +101,13 @@ export function useExtensionState() {
 
   const deactivate = () => {
     try {
-      isPaneOpenStorage.value = false
-      state.value.isActive = false
+      if (currentPageType.value === 'sql') {
+        isPaneOpenSqlStorage.value = false
+        state.value.isActive = false
+      } else {
+        isPaneOpenGraphiqlStorage.value = false
+        state.value.isActive = false
+      }
       logger.info('Extension deactivated')
     } catch (error) {
       logger.error('Failed to deactivate extension', error as Error)
