@@ -2,8 +2,11 @@ import { computed, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
 import type { DOMElements, ExtensionState } from '@/shared/types'
+import type { PageType } from '../services/NavigationManager'
 
 const isPaneOpenStorage = useStorage<boolean>('better-hasura-history-pane-open', false)
+
+const currentPageType = ref<PageType>('unknown')
 
 const state = ref<ExtensionState>({
   isActive: isPaneOpenStorage.value,
@@ -41,6 +44,13 @@ export function useExtensionState() {
       isPaneOpenStorage.value = val
     },
   })
+
+  const pageType = computed(() => currentPageType.value)
+
+  const setPageType = (type: PageType) => {
+    currentPageType.value = type
+    logger.debug(`Page type set to: ${type}`)
+  }
 
   const activate = () => {
     try {
@@ -101,5 +111,7 @@ export function useExtensionState() {
     cleanup,
     updateDOMElements,
     isPaneOpen,
+    pageType,
+    setPageType,
   }
 }

@@ -1,5 +1,7 @@
 import { logger } from '../utils/logger'
 
+export type PageType = 'graphiql' | 'sql' | 'unknown'
+
 /**
  * Manages the extension's lifecycle in a Single-Page Application (SPA) environment.
  * It uses a MutationObserver to detect when the target UI elements are added or removed from the DOM,
@@ -8,6 +10,7 @@ import { logger } from '../utils/logger'
 export class NavigationManager {
   private observer: MutationObserver | null = null
   private isExtensionActive = false
+  private currentPageType: PageType = 'unknown'
 
   /**
    * @param targetNode The DOM node to observe for changes.
@@ -16,7 +19,7 @@ export class NavigationManager {
    */
   constructor(
     private readonly targetNode: Node,
-    private readonly initCallback: () => void,
+    private readonly initCallback: (pageType: PageType) => void,
     private readonly destroyCallback: () => void,
   ) {}
 
@@ -63,20 +66,51 @@ export class NavigationManager {
   }
 
   /**
+   * Checks if the SQL page elements are present in the DOM.
+   * The presence of '#raw_sql' with ace_editor class is a strong indicator of the SQL page.
+   */
+  private isSqlPageVisible(): boolean {
+    return !!document.getElementById('raw_sql')
+  }
+
+  /**
+   * Gets the current page type based on which elements are present.
+   */
+  private detectPageType(): PageType {
+    if (this.isApiExplorerVisible()) {
+      return 'graphiql'
+    }
+    if (this.isSqlPageVisible()) {
+      return 'sql'
+    }
+    return 'unknown'
+  }
+
+  /**
    * This method is called whenever the DOM changes. It checks for the
-   * presence of the API explorer and initializes or destroys the extension.
+   * presence of the API explorer or SQL page and initializes or destroys the extension.
    */
   private handleDOMChange(): void {
-    const isVisible = this.isApiExplorerVisible()
+    const pageType = this.detectPageType()
+    const isVisible = pageType !== 'unknown'
 
     if (isVisible && !this.isExtensionActive) {
-      logger.debug('API Explorer view detected. Initializing extension...')
+      logger.debug(`Page type detected: ${pageType}. Initializing extension...`)
+      this.currentPageType = pageType
       this.isExtensionActive = true
-      this.initCallback()
+      this.initCallback(pageType)
     } else if (!isVisible && this.isExtensionActive) {
-      logger.debug('API Explorer view is no longer visible. Cleaning up extension...')
+      logger.debug(`${this.currentPageType} view is no longer visible. Cleaning up extension...`)
+      this.currentPageType = 'unknown'
       this.isExtensionActive = false
       this.destroyCallback()
     }
+  }
+
+  /**
+   * Gets the current page type.
+   */
+  public getPageType(): PageType {
+    return this.currentPageType
   }
 }

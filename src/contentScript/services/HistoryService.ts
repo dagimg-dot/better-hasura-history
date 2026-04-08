@@ -4,6 +4,14 @@ import type { ParsedQuery } from '@/contentScript/types'
 import { logger } from '@/contentScript/utils/logger'
 
 /**
+ * Parsed SQL data from the script injector.
+ */
+export interface ParsedSql {
+  sql: string
+  operation_name: string
+}
+
+/**
  * Service for managing history entries business logic.
  * Handles creation, validation, and duplicate detection of history entries.
  */
@@ -49,6 +57,54 @@ export class HistoryService {
   }
 
   /**
+   * Create a new SQL history entry from parsed SQL data.
+   */
+  static createSqlEntry(parsed: ParsedSql): HistoryItem {
+    if (!parsed.sql) {
+      throw new Error('Invalid parsed SQL: missing sql field')
+    }
+
+    const { sql, operation_name } = parsed
+
+    if (HistoryService.isSqlDuplicate(sql)) {
+      throw new Error('Duplicate SQL entry')
+    }
+
+    const uniqueName = HistoryService.generateUniqueName(operation_name)
+
+    const entry: HistoryItem = {
+      id: crypto.randomUUID(),
+      operationName: uniqueName,
+      variables: undefined,
+      timestamp: Date.now(),
+      query: sql,
+      operationType: 'sql',
+    }
+
+    logger.info(`Created new SQL history entry: ${entry.operationName}`)
+    return entry
+  }
+
+  /**
+   * Add a new SQL entry to the history.
+   */
+  static addSqlEntry(parsed: ParsedSql): HistoryItem | null {
+    const { addHistoryItem } = useHistory()
+    try {
+      const entry = HistoryService.createSqlEntry(parsed)
+      addHistoryItem(entry)
+      return entry
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Duplicate SQL entry') {
+        logger.info('Skipping duplicate SQL history entry')
+        return null
+      }
+      logger.error('Failed to create SQL history entry', error as Error)
+      throw error
+    }
+  }
+
+  /**
    * Add a new entry to the history.
    */
   static addEntry(parsed: ParsedQuery): HistoryItem | null {
@@ -77,6 +133,14 @@ export class HistoryService {
       (entry) =>
         entry.query === operation && JSON.stringify(entry.variables || {}) === normalizedVariables,
     )
+  }
+
+  /**
+   * Check if a SQL entry with the same query already exists.
+   */
+  private static isSqlDuplicate(sql: string): boolean {
+    const { items } = useHistory()
+    return items.value.some((entry) => entry.query === sql && entry.operationType === 'sql')
   }
 
   /**

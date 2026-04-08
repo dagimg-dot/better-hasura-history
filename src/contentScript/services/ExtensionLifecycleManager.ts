@@ -2,15 +2,23 @@ import BetterHasuraHistory from '../main'
 import { logger } from '../utils/logger'
 import { waitForElement } from '../utils/waitForElement'
 import { SettingsManager } from './SettingsManager'
+import type { PageType } from './NavigationManager'
 
 /**
  * Required DOM elements for the extension to function.
  */
-interface RequiredElements {
+interface GraphiQLElements {
   toolbar: Element
   graphiqlContainer: Element
   executeButton: Element
 }
+
+interface SQLElements {
+  rawSqlContainer: Element
+  runButton: Element
+}
+
+type RequiredElements = GraphiQLElements | SQLElements
 
 /**
  * Manages the lifecycle of the Better Hasura History extension.
@@ -19,17 +27,23 @@ interface RequiredElements {
 export class ExtensionLifecycleManager {
   private bhhInstance: BetterHasuraHistory | null = null
   private isInitialized = false
+  private currentPageType: PageType = 'unknown'
 
   /**
    * Initialize the extension with the provided settings.
    */
-  async initialize(settings?: ReturnType<typeof SettingsManager.mergeSettings>): Promise<void> {
+  async initialize(
+    pageType: PageType,
+    settings?: ReturnType<typeof SettingsManager.mergeSettings>,
+  ): Promise<void> {
     const finalSettings = settings || (await SettingsManager.getSettings())
+    this.currentPageType = pageType
+
     console.info(
-      '[Better Hasura History] ExtensionLifecycleManager.initialize called with settings:',
+      `[Better Hasura History] ExtensionLifecycleManager.initialize called for ${pageType} with settings:`,
       finalSettings,
     )
-    logger.debug('Initializing extension with settings:', finalSettings)
+    logger.debug(`Initializing extension for ${pageType} with settings:`, finalSettings)
 
     // Apply log level setting
     if (finalSettings.logLevel) {
@@ -42,10 +56,10 @@ export class ExtensionLifecycleManager {
     }
 
     try {
-      logger.info('Starting extension initialization...')
-      const elements = await this.waitForRequiredElements()
+      logger.info(`Starting extension initialization for ${pageType}...`)
+      const elements = await this.waitForRequiredElements(pageType)
 
-      this.bhhInstance = new BetterHasuraHistory(elements)
+      this.bhhInstance = new BetterHasuraHistory(elements as any, pageType)
       await this.bhhInstance.init({
         showOriginalHistory: finalSettings.showOriginalHistory,
       })
@@ -62,28 +76,50 @@ export class ExtensionLifecycleManager {
   /**
    * Wait for all required DOM elements to be available.
    */
-  private async waitForRequiredElements(): Promise<RequiredElements> {
-    logger.debug('Waiting for required DOM elements...')
+  private async waitForRequiredElements(pageType: PageType): Promise<RequiredElements> {
+    logger.debug(`Waiting for required DOM elements for ${pageType}...`)
 
-    const elementPromises = [
-      waitForElement('.toolbar'),
-      waitForElement('.graphiql-container'),
-      waitForElement('.execute-button'),
-    ] as const
+    if (pageType === 'graphiql') {
+      const elementPromises = [
+        waitForElement('.toolbar'),
+        waitForElement('.graphiql-container'),
+        waitForElement('.execute-button'),
+      ] as const
 
-    const [toolbar, graphiqlContainer, executeButton] = await Promise.all(elementPromises)
+      const [toolbar, graphiqlContainer, executeButton] = await Promise.all(elementPromises)
 
-    if (!toolbar || !graphiqlContainer || !executeButton) {
-      const missing = []
-      if (!toolbar) missing.push('.toolbar')
-      if (!graphiqlContainer) missing.push('.graphiql-container')
-      if (!executeButton) missing.push('.execute-button')
+      if (!toolbar || !graphiqlContainer || !executeButton) {
+        const missing = []
+        if (!toolbar) missing.push('.toolbar')
+        if (!graphiqlContainer) missing.push('.graphiql-container')
+        if (!executeButton) missing.push('.execute-button')
 
-      throw new Error(`Required DOM elements not found: ${missing.join(', ')}`)
+        throw new Error(`Required DOM elements not found: ${missing.join(', ')}`)
+      }
+
+      logger.debug('All required DOM elements found for GraphiQL')
+      return { toolbar, graphiqlContainer, executeButton }
+    } else if (pageType === 'sql') {
+      const elementPromises = [
+        waitForElement('#raw_sql'),
+        waitForElement('[data-test="run-sql"]'),
+      ] as const
+
+      const [rawSqlContainer, runButton] = await Promise.all(elementPromises)
+
+      if (!rawSqlContainer || !runButton) {
+        const missing = []
+        if (!rawSqlContainer) missing.push('#raw_sql')
+        if (!runButton) missing.push('[data-test="run-sql"]')
+
+        throw new Error(`Required DOM elements not found: ${missing.join(', ')}`)
+      }
+
+      logger.debug('All required DOM elements found for SQL')
+      return { rawSqlContainer, runButton }
     }
 
-    logger.debug('All required DOM elements found')
-    return { toolbar, graphiqlContainer, executeButton }
+    throw new Error(`Unknown page type: ${pageType}`)
   }
 
   /**
@@ -98,12 +134,14 @@ export class ExtensionLifecycleManager {
       }
 
       this.isInitialized = false
+      this.currentPageType = 'unknown'
       logger.info('Extension cleanup completed')
     } catch (error) {
       logger.error('Error during extension cleanup', error as Error)
       // Force reset even if cleanup failed
       this.bhhInstance = null
       this.isInitialized = false
+      this.currentPageType = 'unknown'
     }
   }
 
@@ -146,7 +184,7 @@ export class ExtensionLifecycleManager {
     if (mergedOld.extensionEnabled !== mergedNew.extensionEnabled) {
       if (mergedNew.extensionEnabled) {
         logger.info('Extension enabled - initializing...')
-        await this.initialize(mergedNew)
+        await this.initialize(this.currentPageType || 'graphiql', mergedNew)
       } else {
         logger.info('Extension disabled - cleaning up...')
         this.cleanup()
@@ -172,5 +210,12 @@ export class ExtensionLifecycleManager {
    */
   get instance(): BetterHasuraHistory | null {
     return this.bhhInstance
+  }
+
+  /**
+   * Get the current page type.
+   */
+  get pageType(): PageType {
+    return this.currentPageType
   }
 }

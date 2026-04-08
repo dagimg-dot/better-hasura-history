@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
 import type { HistoryItem } from '@/shared/types'
+import type { PageType } from '../services/NavigationManager'
 
 // Singleton state - Using shallow: true for performance
 const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undefined, {
@@ -9,7 +10,7 @@ const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undef
 })
 const isLoading = ref(false)
 const searchQuery = ref('')
-const selectedOperationType = ref<'query' | 'mutation' | 'subscription' | 'all'>('all')
+const selectedOperationType = ref<'query' | 'mutation' | 'subscription' | 'sql' | 'all'>('all')
 
 export function useHistory() {
   const filteredItems = computed(() => {
@@ -32,6 +33,24 @@ export function useHistory() {
 
     return filtered.sort((a, b) => b.timestamp - a.timestamp)
   })
+
+  // Set operation type filter based on page type
+  const setPageFilter = (pageType: PageType) => {
+    if (pageType === 'sql') {
+      selectedOperationType.value = 'sql'
+    } else if (pageType === 'graphiql') {
+      // For GraphiQL, show all GraphQL types (query, mutation, subscription)
+      selectedOperationType.value = 'all'
+    } else {
+      selectedOperationType.value = 'all'
+    }
+    logger.debug(`Page filter set to: ${selectedOperationType.value}`)
+  }
+
+  // Filter items by operation type (used for page-specific filtering)
+  const filterByType = (type: 'query' | 'mutation' | 'subscription' | 'sql'): HistoryItem[] => {
+    return filteredItems.value.filter((item) => item.operationType === type)
+  }
 
   // Helper to determine operation type from query string
   const determineOperationType = (query: string): 'query' | 'mutation' | 'subscription' => {
@@ -192,6 +211,8 @@ export function useHistory() {
     isLoading: computed(() => isLoading.value),
     searchQuery,
     selectedOperationType,
+    setPageFilter,
+    filterByType,
     addHistoryItem,
     removeHistoryItem,
     clearHistory,

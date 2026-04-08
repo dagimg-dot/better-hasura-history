@@ -1,5 +1,8 @@
 import { ExtensionLifecycleManager, NavigationManager, SettingsManager } from './services'
 import { logger } from './utils/logger'
+import type { PageType } from './services/NavigationManager'
+import { useExtensionState } from './composables/useExtensionState'
+import { useHistory } from './composables/useHistory'
 
 // Inject the bridge script into the main page context
 const script = document.createElement('script')
@@ -19,22 +22,31 @@ function initializeNavigation(): void {
 
   const navigationManager = new NavigationManager(
     document.body,
-    () => {
-      // Initialize the extension when the API explorer becomes visible
+    (pageType: PageType) => {
+      // Initialize the extension when the API explorer or SQL page becomes visible
       SettingsManager.getSettings().then((settings) => {
         if (settings.extensionEnabled) {
-          logger.debug('API Explorer detected - initializing extension...')
-          lifecycleManager.initialize(settings).catch((error) => {
+          logger.debug(
+            `${pageType === 'graphiql' ? 'API Explorer' : 'SQL Page'} detected - initializing extension...`,
+          )
+          lifecycleManager.initialize(pageType, settings).catch((error) => {
             logger.error('Failed to initialize extension on navigation', error as Error)
           })
+
+          // Set the page filter for history based on page type
+          const { setPageType } = useExtensionState()
+          const { setPageFilter } = useHistory()
+          setPageType(pageType)
+          setPageFilter(pageType)
+          logger.debug(`History filter set for page type: ${pageType}`)
         } else {
           logger.info('Extension is disabled, skipping initialization.')
         }
       })
     },
     () => {
-      // Clean up the extension when the API explorer is no longer visible
-      logger.debug('API Explorer hidden - cleaning up extension...')
+      // Clean up the extension when neither page is visible
+      logger.debug('Page hidden - cleaning up extension...')
       lifecycleManager.cleanup()
     },
   )

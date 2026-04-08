@@ -1,3 +1,5 @@
+import type { PageType } from './NavigationManager'
+
 /**
  * Manages DOM manipulation operations for the Better Hasura History extension.
  * Handles creation and cleanup of extension UI containers.
@@ -6,13 +8,17 @@ export class DOMManager {
   private static readonly BUTTON_CONTAINER_ID = 'better-history-button-container'
   private static readonly PANE_CONTAINER_ID = 'better-history-pane-container'
 
+  private pageType: PageType
+
   constructor(
-    private readonly toolbar: Element,
-    private readonly graphiqlContainer: Element,
-  ) {}
+    private readonly container: Element,
+    pageType: PageType,
+  ) {
+    this.pageType = pageType
+  }
 
   /**
-   * Create and insert the button container into the toolbar.
+   * Create and insert the button container into the toolbar (GraphiQL) or near Run button (SQL).
    */
   createButtonContainer(): HTMLDivElement {
     // Remove existing container if it exists
@@ -21,21 +27,33 @@ export class DOMManager {
     const container = document.createElement('div')
     container.id = DOMManager.BUTTON_CONTAINER_ID
 
-    // Insert after the first child (after the prettify button)
-    const insertPosition = Math.min(1, this.toolbar.children.length)
-    const referenceElement = this.toolbar.children[insertPosition]
+    if (this.pageType === 'graphiql') {
+      const toolbar = this.container as Element
+      // Insert after the first child (after the prettify button)
+      const insertPosition = Math.min(1, toolbar.children.length)
+      const referenceElement = toolbar.children[insertPosition]
 
-    if (referenceElement) {
-      this.toolbar.insertBefore(container, referenceElement)
-    } else {
-      this.toolbar.appendChild(container)
+      if (referenceElement) {
+        toolbar.insertBefore(container, referenceElement)
+      } else {
+        toolbar.appendChild(container)
+      }
+    } else if (this.pageType === 'sql') {
+      // For SQL page, find the Run button's parent and insert the button next to it
+      const runButton = document.querySelector('[data-test="run-sql"]') as HTMLElement
+      if (runButton) {
+        const parent = runButton.parentElement
+        if (parent) {
+          parent.insertBefore(container, runButton)
+        }
+      }
     }
 
     return container
   }
 
   /**
-   * Create and insert the pane container into the GraphiQL container.
+   * Create and insert the pane container into the GraphiQL container or SQL page.
    */
   createPaneContainer(): HTMLDivElement {
     // Remove existing container if it exists
@@ -44,14 +62,43 @@ export class DOMManager {
     const container = document.createElement('div')
     container.id = DOMManager.PANE_CONTAINER_ID
 
-    // Insert before after the explorer pane
-    const lastPosition = Math.max(0, this.graphiqlContainer.children.length - 1)
-    const referenceElement = this.graphiqlContainer.children[lastPosition]
+    if (this.pageType === 'graphiql') {
+      const graphiqlContainer = this.container as Element
+      // Insert before the last child (explorer pane)
+      const lastPosition = Math.max(0, graphiqlContainer.children.length - 1)
+      const referenceElement = graphiqlContainer.children[lastPosition]
 
-    if (referenceElement) {
-      this.graphiqlContainer.insertBefore(container, referenceElement)
-    } else {
-      this.graphiqlContainer.appendChild(container)
+      if (referenceElement) {
+        graphiqlContainer.insertBefore(container, referenceElement)
+      } else {
+        graphiqlContainer.appendChild(container)
+      }
+    } else if (this.pageType === 'sql') {
+      // For SQL page, we need to find the right structure
+      // Looking at the HTML, there's a div with class "_1yn2Hu_FpcuAMsFTAk5-Fq" that contains everything
+      // We want to add a pane to the right of the SQL editor
+      const rootContainer = document.querySelector('.rZwcGpymS1jusCiXDYcLo') as HTMLElement
+      if (rootContainer) {
+        // Find the main content area and insert after the SQL editor section
+        const sqlEditorSection = rootContainer.querySelector('._4_8EK7RlaQT8JQZ_hBhjj')
+        if (sqlEditorSection) {
+          const children = sqlEditorSection.children
+          // Insert after all current children to create a right pane
+          for (let i = 0; i < children.length; i++) {
+            const child = children[i]
+            const classes = child.className || ''
+            if (classes.includes('col-xs-8') && classes.includes('_1GPRhKMAouUv16NYEc4Dwr')) {
+              // This is likely the SQL editor column - insert after it
+              sqlEditorSection.insertBefore(container, child.nextSibling)
+              break
+            }
+          }
+        }
+      }
+      // Fallback: just append to container if no suitable insertion point found
+      if (!container.parentElement) {
+        ;(this.container as Element).appendChild(container)
+      }
     }
 
     return container
@@ -113,7 +160,11 @@ export class DOMManager {
    * Find and return the original history button element.
    */
   findOriginalHistoryButton(): HTMLElement | null {
-    return this.toolbar.querySelector('.toolbar-button[title="Show History"]') as HTMLElement
+    if (this.pageType === 'graphiql') {
+      const toolbar = this.container as Element
+      return toolbar.querySelector('.toolbar-button[title="Show History"]') as HTMLElement
+    }
+    return null
   }
 
   /**
@@ -139,16 +190,9 @@ export class DOMManager {
   }
 
   /**
-   * Get the toolbar element.
+   * Get the container element.
    */
-  get toolbarElement(): Element {
-    return this.toolbar
-  }
-
-  /**
-   * Get the GraphiQL container element.
-   */
-  get graphiqlContainerElement(): Element {
-    return this.graphiqlContainer
+  get containerElement(): Element {
+    return this.container
   }
 }

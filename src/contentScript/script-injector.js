@@ -104,6 +104,74 @@ window.addEventListener(
           '*',
         )
       }
+    } else if (type === 'BHH_GET_SQL_CONTENT') {
+      const rawSqlEl = document.getElementById('raw_sql')
+
+      if (rawSqlEl && window.ace) {
+        let attempts = 0
+        const interval = setInterval(() => {
+          attempts++
+          try {
+            const aceEditor = window.ace.edit(rawSqlEl)
+            if (aceEditor && aceEditor.getValue) {
+              clearInterval(interval)
+
+              const sql = aceEditor.getValue() || ''
+
+              // Extract first line as operation name
+              let operation_name = 'Unnamed SQL'
+              const firstLine = sql.split('\n')[0].trim()
+              if (firstLine) {
+                // Truncate to 50 chars
+                operation_name =
+                  firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine
+              }
+
+              window.postMessage(
+                {
+                  type: 'BHH_SQL_CONTENT_RESPONSE',
+                  data: {
+                    sql,
+                    operation_name,
+                  },
+                },
+                '*',
+              )
+            }
+          } catch {
+            // Continue waiting
+          }
+
+          if (attempts > 50) {
+            clearInterval(interval)
+            console.error('[Better Hasura History] Timed out waiting for Ace editor.')
+          }
+        }, 100)
+      }
+    } else if (type === 'BHH_APPLY_SQL_HISTORY_ITEM') {
+      const { sql } = data
+      const rawSqlEl = document.getElementById('raw_sql')
+
+      if (rawSqlEl && window.ace) {
+        let attempts = 0
+        const interval = setInterval(() => {
+          attempts++
+          try {
+            const aceEditor = window.ace.edit(rawSqlEl)
+            if (aceEditor && aceEditor.setValue) {
+              clearInterval(interval)
+              aceEditor.setValue(sql || '', -1)
+            }
+          } catch {
+            // Continue waiting
+          }
+
+          if (attempts > 50) {
+            clearInterval(interval)
+            console.error('[Better Hasura History] Timed out waiting for Ace editor to set value.')
+          }
+        }, 100)
+      }
     }
   },
   false,

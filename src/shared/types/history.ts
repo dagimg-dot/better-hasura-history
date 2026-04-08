@@ -4,12 +4,12 @@ export interface HistoryItem {
   variables?: Record<string, any>
   timestamp: number
   operationName?: string
-  operationType: 'query' | 'mutation' | 'subscription'
+  operationType: 'query' | 'mutation' | 'subscription' | 'sql'
 }
 
 export interface HistorySearchOptions {
   query?: string
-  operationType?: 'query' | 'mutation' | 'subscription'
+  operationType?: 'query' | 'mutation' | 'subscription' | 'sql'
   dateRange?: {
     start: Date
     end: Date

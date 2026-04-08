@@ -53,8 +53,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useVirtualList } from '@vueuse/core'
-import { useExtensionState } from '@/contentScript/composables/useExtensionState'
-import { useHistory } from '@/contentScript/composables/useHistory'
+import { useExtensionState, useHistory } from '@/contentScript/composables'
 import type { HistoryItem as HistoryItemType } from '@/shared/types/history'
 import { BetterHistoryCloseButton } from '@/contentScript/components/controls'
 import {
@@ -64,7 +63,7 @@ import {
   HistoryOptionsMenu,
 } from '@/contentScript/components/history'
 
-const { isPaneOpen } = useExtensionState()
+const { isPaneOpen, pageType } = useExtensionState()
 const {
   filteredItems: filteredHistory,
   searchQuery,
@@ -145,16 +144,32 @@ const handleClearHistory = () => {
 }
 
 const applyHistoryItem = async (item: HistoryItemType) => {
-  window.postMessage(
-    {
-      type: 'BHH_APPLY_HISTORY_ITEM',
-      data: {
-        operation: item.query,
-        variables: JSON.stringify(item.variables, null, 2),
+  const currentPage = pageType.value
+
+  if (currentPage === 'sql' || item.operationType === 'sql') {
+    // Apply SQL history item
+    window.postMessage(
+      {
+        type: 'BHH_APPLY_SQL_HISTORY_ITEM',
+        data: {
+          sql: item.query,
+        },
       },
-    },
-    '*',
-  )
+      '*',
+    )
+  } else {
+    // Apply GraphQL history item
+    window.postMessage(
+      {
+        type: 'BHH_APPLY_HISTORY_ITEM',
+        data: {
+          operation: item.query,
+          variables: JSON.stringify(item.variables, null, 2),
+        },
+      },
+      '*',
+    )
+  }
 }
 
 const operationPreviewRef = ref<any>(null)
