@@ -82,6 +82,46 @@ const {
   itemHeight: 37,
 })
 
+// Initialize pane styles on mount based on isPaneOpen state
+const initializePaneStyles = () => {
+  const paneContainer = document.getElementById('better-history-pane-container')
+  if (paneContainer) {
+    if (isPaneOpen.value) {
+      paneContainer.style.display = ''
+      paneContainer.style.flex = '0 0 280px'
+      paneContainer.style.minWidth = '280px'
+      paneContainer.style.maxWidth = '280px'
+    } else {
+      paneContainer.style.display = 'none'
+      paneContainer.style.flex = '0 0 0'
+      paneContainer.style.minWidth = '0'
+      paneContainer.style.maxWidth = '0'
+    }
+  }
+}
+
+// Watch isPaneOpen to adjust flex layout when pane is toggled
+watch(isPaneOpen, (isOpen) => {
+  const paneContainer = document.getElementById('better-history-pane-container')
+  if (paneContainer) {
+    if (isOpen) {
+      paneContainer.style.display = ''
+      paneContainer.style.flex = '0 0 280px'
+      paneContainer.style.minWidth = '280px'
+      paneContainer.style.maxWidth = '280px'
+    } else {
+      paneContainer.style.display = 'none'
+      paneContainer.style.flex = '0 0 0'
+      paneContainer.style.minWidth = '0'
+      paneContainer.style.maxWidth = '0'
+    }
+  }
+})
+
+onMounted(() => {
+  initializePaneStyles()
+})
+
 const selectedItemIndex = ref(-1)
 
 import { logger } from '@/contentScript/utils/logger'
