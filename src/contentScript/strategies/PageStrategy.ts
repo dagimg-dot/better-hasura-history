@@ -14,11 +14,6 @@ export interface SqlContent {
 
 export type ParsedContent = EditorContent | SqlContent
 
-export interface RequiredPageElements {
-  buttonContainer?: Element
-  paneContainer?: Element
-}
-
 export interface PageStrategy {
   readonly pageType: PageType
   readonly editorType: 'codemirror' | 'ace'
@@ -26,6 +21,15 @@ export interface PageStrategy {
   getRequiredSelectors(): string[]
   getButtonInsertPosition(container: Element): Element | null
   getPaneInsertPosition(container: Element): Element | null
+
+  getRunButtonSelector(): string | null
+  getExecuteMessageType(): string
+
+  getLayoutSetupHandler():
+    | ((buttonContainer: HTMLElement, paneContainer: HTMLElement) => void)
+    | null
+
+  shouldToggleOriginalHistory(): boolean
 
   createButtonElement(): HTMLDivElement
   createPaneElement(): HTMLDivElement

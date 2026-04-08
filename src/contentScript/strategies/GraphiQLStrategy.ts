@@ -20,6 +20,24 @@ export class GraphiQLStrategy implements PageStrategy {
     return container.children[insertPosition] || null
   }
 
+  getRunButtonSelector(): string | null {
+    return '.execute-button'
+  }
+
+  getExecuteMessageType(): string {
+    return 'BHH_GET_EDITOR_CONTENT'
+  }
+
+  getLayoutSetupHandler():
+    | ((buttonContainer: HTMLElement, paneContainer: HTMLElement) => void)
+    | null {
+    return null
+  }
+
+  shouldToggleOriginalHistory(): boolean {
+    return true
+  }
+
   createButtonElement(): HTMLDivElement {
     const container = document.createElement('div')
     container.id = 'better-history-button-container'

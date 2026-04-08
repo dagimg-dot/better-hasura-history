@@ -22,22 +22,13 @@ export class DOMManager {
     const container = document.createElement('div')
     container.id = DOMManager.BUTTON_CONTAINER_ID
 
-    if (strategy.pageType === 'graphiql') {
-      if (this.buttonContainerEl) {
-        const position = strategy.getButtonInsertPosition(this.buttonContainerEl)
-        if (position) {
-          this.buttonContainerEl.insertBefore(container, position)
-        } else {
-          this.buttonContainerEl.appendChild(container)
-        }
-        return container
-      }
-      const position = strategy.getButtonInsertPosition(this.container)
-      if (position) {
-        this.container.insertBefore(container, position)
-      } else {
-        this.container.appendChild(container)
-      }
+    const targetContainer = this.buttonContainerEl || this.container
+    const position = strategy.getButtonInsertPosition(targetContainer)
+
+    if (position && position.parentNode === targetContainer) {
+      targetContainer.insertBefore(container, position)
+    } else {
+      targetContainer.appendChild(container)
     }
 
     return container
@@ -48,26 +39,13 @@ export class DOMManager {
     const container = document.createElement('div')
     container.id = DOMManager.PANE_CONTAINER_ID
 
-    if (strategy.pageType === 'graphiql') {
-      if (this.paneContainerEl) {
-        const position = strategy.getPaneInsertPosition(this.paneContainerEl)
-        if (position) {
-          this.paneContainerEl.insertBefore(container, position)
-        } else {
-          this.paneContainerEl.appendChild(container)
-        }
-        return container
-      }
-      const position = strategy.getPaneInsertPosition(this.container)
-      if (position) {
-        this.container.insertBefore(container, position)
-      } else {
-        this.container.appendChild(container)
-      }
-    }
+    const targetContainer = this.paneContainerEl || this.container
+    const position = strategy.getPaneInsertPosition(targetContainer)
 
-    if (!container.parentElement) {
-      this.container.appendChild(container)
+    if (position && position.parentNode === targetContainer) {
+      targetContainer.insertBefore(container, position)
+    } else {
+      targetContainer.appendChild(container)
     }
 
     return container

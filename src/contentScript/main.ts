@@ -1,14 +1,13 @@
 import { DOMManager, HistoryService, VueAppManager } from './services'
 import { logger } from './utils/logger'
-import { SqlLayoutHelper } from './utils/SqlLayoutHelper'
 import { createPageStrategy, type PageStrategy, type ParsedContent } from './strategies'
 
 export class BetterHasuraHistory {
   private strategy: PageStrategy
   private domManager: DOMManager
   private vueAppManager = new VueAppManager()
-  private sqlLayoutHelper = new SqlLayoutHelper()
   private originalHistoryButton: HTMLElement | null = null
+  private resizeObserver: ResizeObserver | null = null
   private isInitialized = false
 
   constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: string) {
@@ -16,12 +15,14 @@ export class BetterHasuraHistory {
     this.domManager = new DOMManager(elements.buttonContainer, this.strategy)
     this.domManager.setContainers(elements.buttonContainer, elements.paneContainer)
 
-    if (pageType === 'graphiql') {
-      const runButton = document.querySelector('.execute-button')
-      runButton?.addEventListener('click', this.handleExecuteClick)
-    } else if (pageType === 'sql') {
-      const runButton = document.querySelector('[data-test="run-sql"]')
-      runButton?.addEventListener('click', this.handleRunClick)
+    const runButtonSelector = this.strategy.getRunButtonSelector()
+    const executeMessageType = this.strategy.getExecuteMessageType()
+    const runButton = runButtonSelector ? document.querySelector(runButtonSelector) : null
+
+    if (runButton) {
+      runButton.addEventListener('click', () => {
+        window.postMessage({ type: executeMessageType }, '*')
+      })
     }
 
     window.addEventListener('message', this.handleMessage)
@@ -51,14 +52,6 @@ export class BetterHasuraHistory {
     }
   }
 
-  private handleExecuteClick = (): void => {
-    window.postMessage({ type: 'BHH_GET_EDITOR_CONTENT' }, '*')
-  }
-
-  private handleRunClick = (): void => {
-    window.postMessage({ type: 'BHH_GET_SQL_CONTENT' }, '*')
-  }
-
   async init(settings: { showOriginalHistory: boolean }): Promise<void> {
     if (this.isInitialized) return
 
@@ -67,22 +60,18 @@ export class BetterHasuraHistory {
     const buttonContainer = this.domManager.createButtonContainer(this.strategy)
     const paneContainer = this.domManager.createPaneContainer(this.strategy)
 
-    if (this.strategy.pageType === 'sql') {
-      const sqlEditor = document.getElementById('raw_sql') as HTMLElement
-      const dataSourceSelect = document.querySelector(
-        'select[name="data-source"]',
-      ) as HTMLSelectElement
-      if (sqlEditor && paneContainer instanceof HTMLElement) {
-        this.sqlLayoutHelper.wrapEditorWithPane(sqlEditor, paneContainer)
-      }
-      if (dataSourceSelect && buttonContainer instanceof HTMLElement) {
-        this.sqlLayoutHelper.wrapSelectWithButton(dataSourceSelect, buttonContainer)
-      }
+    const layoutHandler = this.strategy.getLayoutSetupHandler()
+    if (
+      layoutHandler &&
+      buttonContainer instanceof HTMLElement &&
+      paneContainer instanceof HTMLElement
+    ) {
+      layoutHandler(buttonContainer, paneContainer)
     }
 
     this.vueAppManager.initializeApps(buttonContainer, paneContainer)
 
-    if (this.strategy.pageType === 'graphiql') {
+    if (this.strategy.shouldToggleOriginalHistory()) {
       const prettifyBtn = this.domManager.createPrettifyButton()
       prettifyBtn?.addEventListener('click', (e) => {
         e.stopPropagation()
@@ -100,10 +89,15 @@ export class BetterHasuraHistory {
 
     this.vueAppManager.cleanup()
     this.domManager.cleanup()
-    this.sqlLayoutHelper.cleanup()
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+      this.resizeObserver = null
+    }
+
     window.removeEventListener('message', this.handleMessage)
 
-    if (this.strategy.pageType === 'graphiql') {
+    if (this.strategy.shouldToggleOriginalHistory()) {
       this.toggleOriginalHistory(true)
     }
 
