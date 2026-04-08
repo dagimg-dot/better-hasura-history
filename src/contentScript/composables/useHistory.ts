@@ -152,7 +152,9 @@ export function useHistory() {
         query: item.query,
         variables: item.variables,
         operationType: item.operationType,
-        createdAt: new Date(item.timestamp).toISOString(),
+        createdAt: item.timestamp
+          ? new Date(item.timestamp).toISOString()
+          : new Date().toISOString(),
       }))
       return JSON.stringify(data, null, 2)
     } catch (error) {
