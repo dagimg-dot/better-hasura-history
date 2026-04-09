@@ -2,6 +2,7 @@
   <div class="table-search-container">
     <div class="table-search-input-wrapper">
       <input
+        ref="searchInput"
         type="text"
         placeholder="Search tables..."
         v-model="searchTerm"
@@ -43,6 +44,7 @@ const searchTerm = ref('')
 const showDropdown = ref(false)
 const selectedIndex = ref(0)
 const isRefreshing = ref(false)
+const searchInput = ref<HTMLInputElement | null>(null)
 
 const filteredTables = computed(() => {
   return TableService.search(searchTerm.value).slice(0, 20)
@@ -57,7 +59,9 @@ watchDebounced(
 )
 
 const handleFocus = () => {
-  logger.debug('TableSearch: focus, hasTables', { hasTables: TableService.hasTables() })
+  if (searchTerm.value) {
+    searchInput.value?.select()
+  }
   showDropdown.value = true
 }
 
@@ -87,9 +91,40 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 const selectTable = (table: TableInfo) => {
-  logger.debug('TableSearch: selecting table', { tableName: table.displayName })
-  const url = `/console/data/default/schema/${table.schema}/tables/${table.table}/browse`
-  window.location.href = url
+  showDropdown.value = false
+  searchInput.value?.blur()
+
+  // Find schema button and click to expand
+  const allButtons = document.querySelectorAll('[data-test="table-links"] div[role="button"]')
+  let schemaButton: Element | null = null
+
+  for (const btn of Array.from(allButtons)) {
+    if (btn.textContent?.trim().includes(table.schema)) {
+      schemaButton = btn
+      break
+    }
+  }
+
+  if (schemaButton) {
+    ;(schemaButton as HTMLElement).click()
+
+    // Wait for table to appear and click it
+    setTimeout(() => {
+      const tableLink = document.querySelector(`a[data-test="${table.table}"]`)
+      if (tableLink) {
+        ;(tableLink as HTMLElement).click()
+      } else {
+        // Fallback: find by href
+        const allLinks = Array.from(document.querySelectorAll('[data-test="table-links"] a'))
+        for (const link of allLinks) {
+          if (link.getAttribute('href')?.includes(`/${table.table}/browse`)) {
+            ;(link as HTMLElement).click()
+            return
+          }
+        }
+      }
+    }, 400)
+  }
 }
 
 const handleRefresh = async () => {
