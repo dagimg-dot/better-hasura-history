@@ -48,14 +48,14 @@ function resetTableSearchState(): void {
 
 async function injectTableSearch(): Promise<void> {
   const pageInfo = RouteManager.getPageInfo()
-  
+
   if (pageInfo.route === 'data' || pageInfo.route === 'sql') {
     if (pageInfo.route !== currentRoute) {
       currentRoute = pageInfo.route
       tableSearchInjected = false
     }
   }
-  
+
   if (tableSearchInjected) return
 
   const tableLinks = document.querySelector('[data-test="table-links"]')

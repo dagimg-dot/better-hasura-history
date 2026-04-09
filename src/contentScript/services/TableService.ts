@@ -7,9 +7,12 @@ export interface TableInfo {
   schema: string
   table: string
   displayName: string
+  lastAccessed?: number
 }
 
 const tablesStorage = useStorage<TableInfo[]>('better-hasura-tables', [])
+const RECENCY_DECAY_HOURS = 24 * 7 // 7 days for half-life
+const RECENCY_DECAY_MS = RECENCY_DECAY_HOURS * 60 * 60 * 1000
 
 let fuseInstance: Fuse<TableInfo> | null = null
 
@@ -24,6 +27,21 @@ function getFuseInstance(): Fuse<TableInfo> {
   return fuseInstance
 }
 
+function calculateRecencyScore(lastAccessed: number): number {
+  const now = Date.now()
+  const age = now - lastAccessed
+  const halfLife = RECENCY_DECAY_MS
+  return Math.pow(0.5, age / halfLife)
+}
+
+function sortByRecency(tables: TableInfo[]): TableInfo[] {
+  return [...tables].sort((a, b) => {
+    const scoreA = a.lastAccessed ? calculateRecencyScore(a.lastAccessed) : 0
+    const scoreB = b.lastAccessed ? calculateRecencyScore(b.lastAccessed) : 0
+    return scoreB - scoreA
+  })
+}
+
 function updateFuseIndex(): void {
   fuseInstance = null
   if (tablesStorage.value.length > 0) {
@@ -33,7 +51,7 @@ function updateFuseIndex(): void {
 
 export const TableService = {
   getTables(): TableInfo[] {
-    return tablesStorage.value
+    return sortByRecency(tablesStorage.value)
   },
 
   hasTables(): boolean {
@@ -42,10 +60,20 @@ export const TableService = {
 
   search(query: string): TableInfo[] {
     if (!query.trim()) {
-      return tablesStorage.value
+      return sortByRecency(tablesStorage.value)
     }
     const results = getFuseInstance().search(query)
-    return results.map((r) => r.item)
+    const matchedTables = results.map((r) => r.item)
+    return sortByRecency(matchedTables)
+  },
+
+  markAccessed(displayName: string): void {
+    const tables = tablesStorage.value
+    const index = tables.findIndex((t) => t.displayName === displayName)
+    if (index !== -1) {
+      tables[index].lastAccessed = Date.now()
+      tablesStorage.value = [...tables]
+    }
   },
 
   async fetchTables(): Promise<void> {

@@ -94,6 +94,8 @@ const selectTable = (table: TableInfo) => {
   showDropdown.value = false
   searchInput.value?.blur()
 
+  TableService.markAccessed(table.displayName)
+
   // Find schema button and click to expand
   const allButtons = document.querySelectorAll('[data-test="table-links"] div[role="button"]')
   let schemaButton: Element | null = null
