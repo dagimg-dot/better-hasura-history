@@ -18,7 +18,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc --noEmit && vite build && node scripts/fix-manifest.cjs",
     "preview": "vite preview",
     "generate:key": "openssl genrsa -out bhh_private.pem 2048 && openssl rsa -in bhh_private.pem -pubout -out bhh_public.pem",
     "pack": "pnpm build && pnpm generate:key && mkdir -p dist && crx3 build -p bhh_private.pem --appVersion $(node -p \"require('./package.json').version\") -o dist/better-hasura-history-$(node -p \"require('./package.json').version\").crx -z dist/better-hasura-history-$(node -p \"require('./package.json').version\").zip",
