@@ -1,4 +1,10 @@
-import { ExtensionLifecycleManager, NavigationManager, SettingsManager } from './services'
+import {
+  ExtensionLifecycleManager,
+  NavigationManager,
+  RouteManager,
+  SearchInputManager,
+  SettingsManager,
+} from './services'
 import { logger } from './utils/logger'
 import type { PageType } from './services/NavigationManager'
 import { useExtensionState } from './composables/useExtensionState'
@@ -19,6 +25,17 @@ window.addEventListener('message', (event) => {
 })
 
 let tableSearchInjected = false
+
+const searchInputManager = new SearchInputManager()
+
+function setupGlobalShortcut(): void {
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+      e.preventDefault()
+      searchInputManager.focus()
+    }
+  })
+}
 
 async function injectTableSearch(): Promise<void> {
   if (tableSearchInjected) return
@@ -73,7 +90,7 @@ async function injectTableSearch(): Promise<void> {
 
 function setupTableSearchObserver(): void {
   const observer = new MutationObserver(() => {
-    if (window.location.pathname.startsWith('/console/data')) {
+    if (RouteManager.getPageInfo().route === 'data' || RouteManager.getPageInfo().route === 'sql') {
       injectTableSearch()
     }
   })
@@ -107,7 +124,10 @@ function initializeNavigation(): void {
 
   navigationManager.start()
 
-  if (window.location.pathname.startsWith('/console/data')) {
+  setupGlobalShortcut()
+
+  const pageInfo = RouteManager.getPageInfo()
+  if (pageInfo.route === 'data' || pageInfo.route === 'sql') {
     injectTableSearch()
   }
 
