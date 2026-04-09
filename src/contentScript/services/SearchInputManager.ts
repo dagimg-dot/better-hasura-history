@@ -58,4 +58,12 @@ export class SearchInputManager {
     this.lastFocusedInput.focus()
     this.lastFocusedInput.select()
   }
+
+  blurAll(): void {
+    const allInputs = this.getInputsForPage()
+    for (const input of allInputs) {
+      input.blur()
+    }
+    this.lastFocusedInput = null
+  }
 }

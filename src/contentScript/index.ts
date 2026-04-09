@@ -35,6 +35,9 @@ function setupGlobalShortcut(): void {
       e.preventDefault()
       searchInputManager.focus()
     }
+    if (e.key === 'Escape') {
+      searchInputManager.blurAll()
+    }
   })
 }
 
