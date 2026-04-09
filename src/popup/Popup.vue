@@ -5,12 +5,16 @@ interface Settings {
   extensionEnabled: boolean
   showOriginalHistory: boolean
   logLevel: 'debug' | 'info' | 'warn' | 'error'
+  adminSecret: string
+  graphqlEndpoint: string
 }
 
 const settings = ref<Settings>({
   extensionEnabled: true,
   showOriginalHistory: false,
   logLevel: 'info',
+  adminSecret: '',
+  graphqlEndpoint: '',
 })
 
 onMounted(() => {
@@ -18,7 +22,6 @@ onMounted(() => {
     if (result.settings) {
       settings.value = { ...settings.value, ...result.settings }
     } else {
-      // Set default settings if none are found
       chrome.storage.local.set({ settings: settings.value })
     }
   })
@@ -75,6 +78,30 @@ watch(
           <option value="error">Error (Only errors)</option>
         </select>
         <p class="description">Higher levels reduce console noise.</p>
+      </div>
+
+      <div class="setting-col">
+        <label for="graphql-endpoint">GraphQL Endpoint</label>
+        <input
+          type="text"
+          id="graphql-endpoint"
+          v-model="settings.graphqlEndpoint"
+          class="text-input"
+          placeholder="http://localhost:6083"
+        />
+        <p class="description">Your Hasura console URL (e.g., http://localhost:6083)</p>
+      </div>
+
+      <div class="setting-col">
+        <label for="admin-secret">Admin Secret</label>
+        <input
+          type="password"
+          id="admin-secret"
+          v-model="settings.adminSecret"
+          class="text-input"
+          placeholder="Enter admin secret"
+        />
+        <p class="description">Required for fetching table metadata</p>
       </div>
     </div>
   </main>
@@ -169,6 +196,21 @@ h1 {
 .select-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.text-input {
+  background-color: #4a5568;
+  color: white;
+  border: 1px solid #718096;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.text-input:focus {
+  border-color: var(--primary-color);
 }
 
 .description {

@@ -4,6 +4,8 @@ interface Settings {
   extensionEnabled: boolean
   showOriginalHistory: boolean
   logLevel: LogLevel
+  adminSecret: string
+  graphqlEndpoint: string
 }
 
 export class SettingsManager {
@@ -11,6 +13,8 @@ export class SettingsManager {
     extensionEnabled: true,
     showOriginalHistory: false,
     logLevel: 'info',
+    adminSecret: '',
+    graphqlEndpoint: '',
   }
 
   static async getSettings(): Promise<Settings> {

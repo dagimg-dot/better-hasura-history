@@ -3,6 +3,7 @@ import { logger } from './utils/logger'
 import type { PageType } from './services/NavigationManager'
 import { useExtensionState } from './composables/useExtensionState'
 import { useHistory } from './composables/useHistory'
+import { TableSearch } from './components/table'
 
 const script = document.createElement('script')
 script.src = chrome.runtime.getURL('src/contentScript/script-injector.js')
@@ -16,6 +17,69 @@ window.addEventListener('message', (event) => {
     chrome.runtime.sendMessage({ type: 'BHH_DOWNLOAD_HISTORY', data })
   }
 })
+
+let tableSearchInjected = false
+
+async function injectTableSearch(): Promise<void> {
+  if (tableSearchInjected) return
+
+  const tableLinks = document.querySelector('[data-test="table-links"]')
+  if (!tableLinks) {
+    logger.debug('Table links element not found, waiting...')
+    return
+  }
+
+  const parent = tableLinks.parentElement
+  if (!parent) return
+
+  const existingSearch = parent.querySelector('.table-search-container')
+  if (existingSearch) {
+    tableSearchInjected = true
+    return
+  }
+
+  try {
+    const dbSection = parent.querySelector('.P72YYDnHxrZnFQaKXXUxI')
+
+    const wrapper = document.createElement('div')
+    wrapper.className = 'bhh-table-search-wrapper'
+    wrapper.style.display = 'flex'
+    wrapper.style.flexDirection = 'column'
+
+    if (dbSection && dbSection.parentElement === parent) {
+      parent.insertBefore(wrapper, tableLinks)
+      wrapper.appendChild(dbSection)
+    } else {
+      parent.insertBefore(wrapper, tableLinks)
+    }
+
+    const searchContainer = document.createElement('div')
+    searchContainer.className = 'table-search-container'
+    wrapper.appendChild(searchContainer)
+
+    const vueApp = document.createElement('div')
+    searchContainer.appendChild(vueApp)
+
+    const { createApp } = await import('vue')
+    const app = createApp(TableSearch)
+    app.mount(vueApp)
+
+    tableSearchInjected = true
+    logger.debug('Table search injected successfully')
+  } catch (error) {
+    logger.error('Failed to inject table search', error as Error)
+  }
+}
+
+function setupTableSearchObserver(): void {
+  const observer = new MutationObserver(() => {
+    if (window.location.pathname.startsWith('/console/data')) {
+      injectTableSearch()
+    }
+  })
+
+  observer.observe(document.body, { childList: true, subtree: true })
+}
 
 const lifecycleManager = new ExtensionLifecycleManager()
 
@@ -42,6 +106,12 @@ function initializeNavigation(): void {
   )
 
   navigationManager.start()
+
+  if (window.location.pathname.startsWith('/console/data')) {
+    injectTableSearch()
+  }
+
+  setupTableSearchObserver()
 }
 
 try {

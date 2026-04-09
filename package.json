@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@vueuse/core": "^13.6.0",
+    "fuse.js": "^7.3.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {
