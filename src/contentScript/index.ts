@@ -25,6 +25,7 @@ window.addEventListener('message', (event) => {
 })
 
 let tableSearchInjected = false
+let currentRoute: string = 'unknown'
 
 const searchInputManager = new SearchInputManager()
 
@@ -37,7 +38,21 @@ function setupGlobalShortcut(): void {
   })
 }
 
+function resetTableSearchState(): void {
+  tableSearchInjected = false
+  currentRoute = 'unknown'
+}
+
 async function injectTableSearch(): Promise<void> {
+  const pageInfo = RouteManager.getPageInfo()
+  
+  if (pageInfo.route === 'data' || pageInfo.route === 'sql') {
+    if (pageInfo.route !== currentRoute) {
+      currentRoute = pageInfo.route
+      tableSearchInjected = false
+    }
+  }
+  
   if (tableSearchInjected) return
 
   const tableLinks = document.querySelector('[data-test="table-links"]')
@@ -90,8 +105,11 @@ async function injectTableSearch(): Promise<void> {
 
 function setupTableSearchObserver(): void {
   const observer = new MutationObserver(() => {
-    if (RouteManager.getPageInfo().route === 'data' || RouteManager.getPageInfo().route === 'sql') {
+    const pageInfo = RouteManager.getPageInfo()
+    if (pageInfo.route === 'data' || pageInfo.route === 'sql') {
       injectTableSearch()
+    } else if (currentRoute !== 'unknown') {
+      resetTableSearchState()
     }
   })
 
