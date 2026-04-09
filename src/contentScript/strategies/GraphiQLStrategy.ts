@@ -52,7 +52,7 @@ export class GraphiQLStrategy implements PageStrategy {
 
   getHistoryItemData(content: ParsedContent): Partial<HistoryItem> {
     const editorContent = content as EditorContent
-    const trimmed = editorContent.query.trim().toLowerCase()
+    const trimmed = (editorContent.query || editorContent.operation || '').trim().toLowerCase()
     let operationType: 'query' | 'mutation' | 'subscription' = 'query'
     if (trimmed.startsWith('mutation')) operationType = 'mutation'
     else if (trimmed.startsWith('subscription')) operationType = 'subscription'
@@ -67,8 +67,8 @@ export class GraphiQLStrategy implements PageStrategy {
     }
 
     return {
-      operationName: editorContent.operationName,
-      query: editorContent.query,
+      operationName: editorContent.operation_name,
+      query: editorContent.query || editorContent.operation || '',
       variables,
       operationType,
     }

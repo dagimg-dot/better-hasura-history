@@ -2,14 +2,15 @@ import type { PageType } from '../services/NavigationManager'
 import type { HistoryItem } from '@/shared/types/history'
 
 export interface EditorContent {
-  query: string
+  query?: string
+  operation?: string
   variables?: string
-  operationName: string
+  operation_name: string
 }
 
 export interface SqlContent {
-  sql: string
-  operationName: string
+  sql?: string
+  operation_name: string
 }
 
 export type ParsedContent = EditorContent | SqlContent

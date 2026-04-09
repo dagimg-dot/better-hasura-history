@@ -129,8 +129,8 @@ export class SqlStrategy implements PageStrategy {
   getHistoryItemData(content: ParsedContent): Partial<HistoryItem> {
     const sqlContent = content as SqlContent
     return {
-      operationName: sqlContent.operationName,
-      query: sqlContent.sql,
+      operationName: sqlContent.operation_name,
+      query: sqlContent.sql || '',
       variables: undefined,
       operationType: 'sql',
     }
