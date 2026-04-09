@@ -1,5 +1,6 @@
 <template>
   <div class="table-search-container">
+    <div class="table-search-title">Tables ({{ tableCount }})</div>
     <div class="table-search-input-wrapper">
       <input
         ref="searchInput"
@@ -45,6 +46,8 @@ const showDropdown = ref(false)
 const selectedIndex = ref(0)
 const isRefreshing = ref(false)
 const searchInput = ref<HTMLInputElement | null>(null)
+
+const tableCount = computed(() => TableService.getTables().length)
 
 const filteredTables = computed(() => {
   return TableService.search(searchTerm.value).slice(0, 20)
@@ -147,6 +150,14 @@ const handleRefresh = async () => {
 .table-search-container {
   position: relative;
   padding: 8px 10px 10px 0 !important;
+}
+
+.table-search-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 6px;
+  padding: 0 0 6px 6px;
 }
 
 .table-search-input-wrapper {
