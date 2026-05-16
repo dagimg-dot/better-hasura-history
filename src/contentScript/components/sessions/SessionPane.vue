@@ -44,12 +44,12 @@ import SessionRow from './SessionRow.vue'
 import { logger } from '@/contentScript/utils/logger'
 import type { Session } from '@/shared/types'
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { EXTENSION_CONFIG } from '@/shared/constants'
 
 const { sessions, addSession, updateSession, removeSession } = useSessions()
 
-const activeSessionId = computed(() => {
+function findActiveSession() {
   try {
     const raw = localStorage.getItem(EXTENSION_CONFIG.STORAGE_KEYS.GRAPHQL_HEADERS)
     if (!raw) return null
@@ -61,14 +61,23 @@ const activeSessionId = computed(() => {
     const auth = headers.find((h) => h.key.toLowerCase() === 'authorization' && h.isActive)
     if (!auth) return null
     const bearerToken = auth.value.replace(/^Bearer\s+/i, '')
-    return sessions.value.find((s) => s.token === bearerToken)?.id ?? null
+    return sessions.value.find((s) => s.token === bearerToken) ?? null
   } catch {
     return null
   }
-})
+}
+
+const activeSessionId = ref<string | null>(null)
+watch(
+  sessions,
+  () => {
+    activeSessionId.value = findActiveSession()?.id ?? null
+  },
+  { immediate: true },
+)
 
 const activeAuth = computed(() => {
-  const active = sessions.value.find((s) => s.status === 'success' && s.token)
+  const active = findActiveSession()
   if (!active?.token) return null
 
   const shortToken =
@@ -114,6 +123,7 @@ async function handleAuthenticate(sessionId: string) {
     }
 
     updateSession(sessionId, updates)
+    activeSessionId.value = findActiveSession()?.id ?? null
     logger.info('SessionPane: authentication successful for', {
       name: updates.name || session.name,
     })
