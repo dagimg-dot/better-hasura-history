@@ -1,13 +1,10 @@
 <template>
-  <div class="toolbar-buttons">
-    <BetterButton label="Better History" title="View API call history" :onClick="togglePane" />
-    <BetterButton
-      :label="refreshLabel"
-      title="Re-fetch GraphQL schema from the server"
-      :onClick="refreshSchema"
-      :styles="refreshStyles"
-    />
-  </div>
+  <BetterButton label="Better History" title="View API call history" :onClick="togglePane" />
+  <BetterButton
+    :label="refreshLabel"
+    title="Re-fetch GraphQL schema from the server"
+    :onClick="refreshSchema"
+  />
 </template>
 
 <script setup lang="ts">
@@ -22,10 +19,6 @@ const togglePane = () => {
 }
 
 const refreshLabel = ref('Refresh Schema')
-const refreshStyles: Record<string, string> = {
-  border: '1px solid #ccc',
-  padding: '3px 8px',
-}
 
 const refreshSchema = () => {
   refreshLabel.value = 'Refreshing...'
@@ -50,10 +43,3 @@ onUnmounted(() => {
   window.removeEventListener('message', handleMessage)
 })
 </script>
-
-<style scoped>
-.toolbar-buttons {
-  display: inline-flex;
-  align-items: center;
-}
-</style>

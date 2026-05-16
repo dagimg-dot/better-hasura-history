@@ -23,7 +23,7 @@ const defaultStyles: Record<string, string> = {
   border: '0',
   borderRadius: '3px',
   boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.7), inset 0 1px #fff',
-  color: '#555',
+  color: '#555 !important',
   cursor: 'pointer',
   display: 'inline-block',
   margin: '0 5px',
