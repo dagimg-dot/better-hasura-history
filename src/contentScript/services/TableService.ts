@@ -94,43 +94,47 @@ export const TableService = {
 
     const hostname = SettingsManager.getCurrentHost()
     const allSettings = await SettingsManager.getSettings()
-    const configuredSource = allSettings.hosts?.[hostname]?.source
+    const hostConfig = allSettings.hosts?.[hostname]
+    const configuredSource = hostConfig?.source
+    const configuredSourceKind = hostConfig?.sourceKind
     const source = configuredSource || 'default'
 
     let tables: TableInfo[] | null = null
 
-    try {
-      const sql =
-        "SELECT table_name, table_schema FROM information_schema.tables WHERE table_schema NOT IN ('information_schema','pg_catalog','hdb_catalog','hdb_views') AND table_type = 'BASE TABLE' ORDER BY table_schema, table_name"
+    if (!configuredSourceKind || configuredSourceKind === 'postgres') {
+      try {
+        const sql =
+          "SELECT tbl->'table'->>'name' AS table_name, tbl->'table'->>'schema' AS table_schema FROM hdb_catalog.hdb_metadata, json_array_elements(metadata->'sources'->0->'tables') AS tbl ORDER BY table_schema, table_name"
 
-      logger.debug('fetchTables: trying run_sql', { source })
-      const runSqlResponse = await fetch(`${graphqlEndpoint}/v2/query`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-hasura-admin-secret': adminSecret,
-        },
-        body: JSON.stringify({
-          type: 'run_sql',
-          args: { source, sql, read_only: true },
-        }),
-      })
+        logger.debug('fetchTables: trying run_sql', { source })
+        const runSqlResponse = await fetch(`${graphqlEndpoint}/v2/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-hasura-admin-secret': adminSecret,
+          },
+          body: JSON.stringify({
+            type: 'run_sql',
+            args: { source, sql, read_only: true },
+          }),
+        })
 
-      if (runSqlResponse.ok) {
-        const runSqlData = await runSqlResponse.json()
-        if (runSqlData.result_type === 'TuplesOk') {
-          tables = runSqlData.result.slice(1).map((row: string[]) => {
-            const schema = row[1] || 'public'
-            return { schema, table: row[0], displayName: `${schema}.${row[0]}` }
-          })
-          logger.debug(`fetchTables: fetched ${tables!.length} tables via run_sql`)
+        if (runSqlResponse.ok) {
+          const runSqlData = await runSqlResponse.json()
+          if (runSqlData.result_type === 'TuplesOk') {
+            tables = runSqlData.result.slice(1).map((row: string[]) => {
+              const schema = row[1] || 'public'
+              return { schema, table: row[0], displayName: `${schema}.${row[0]}` }
+            })
+            logger.debug(`fetchTables: fetched ${tables!.length} tables via run_sql`)
+          }
         }
+      } catch (error) {
+        logger.debug(
+          'fetchTables: run_sql failed, falling back',
+          error instanceof Error ? { error: error.message } : {},
+        )
       }
-    } catch (error) {
-      logger.debug(
-        'fetchTables: run_sql failed, falling back',
-        error instanceof Error ? { error: error.message } : {},
-      )
     }
 
     if (!tables) {
@@ -170,13 +174,21 @@ export const TableService = {
           logger.debug(`fetchTables: fetched ${tables.length} tables via export_metadata`)
         }
 
-        if (metadataSourceName && metadataSourceName !== configuredSource) {
-          logger.debug('fetchTables: discovered source name', { metadataSourceName })
-          SettingsManager.saveHostSettings(hostname, { source: metadataSourceName }).catch(
-            (err) => {
-              logger.error('Failed to save discovered source name', err as Error)
-            },
-          )
+        const metadataSourceKind = sources?.[0]?.kind
+        if (metadataSourceName || metadataSourceKind) {
+          const updates: Partial<import('@/contentScript/services/SettingsManager').HostConfig> = {}
+          if (metadataSourceName && metadataSourceName !== configuredSource) {
+            updates.source = metadataSourceName
+          }
+          if (metadataSourceKind && metadataSourceKind !== configuredSourceKind) {
+            updates.sourceKind = metadataSourceKind
+          }
+          if (Object.keys(updates).length > 0) {
+            logger.debug('fetchTables: discovered source config', updates)
+            SettingsManager.saveHostSettings(hostname, updates).catch((err) => {
+              logger.error('Failed to save discovered source config', err as Error)
+            })
+          }
         }
       } catch (error) {
         logger.error('Failed to fetch tables', error as Error)

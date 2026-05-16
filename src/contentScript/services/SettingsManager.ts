@@ -6,6 +6,7 @@ export interface HostConfig {
   adminSecret: string
   graphqlEndpoint: string
   source?: string
+  sourceKind?: string
 }
 
 export interface Settings {
