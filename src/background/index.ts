@@ -1,6 +1,6 @@
 import { logger } from '../contentScript/utils/logger'
 
-console.log('[Better Hasura History] Background script loaded')
+console.log('[Better Hasura Console] Background script loaded')
 
 chrome.runtime.onMessage.addListener((request) => {
   if (request.type === 'COUNT') {

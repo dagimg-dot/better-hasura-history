@@ -24,7 +24,7 @@ export class Logger {
   }
 
   setLogLevel(level: LogLevel): void {
-    console.info(`[Better Hasura History] Setting log level to: ${level}`)
+    console.info(`[Better Hasura Console] Setting log level to: ${level}`)
     this.logLevel = level
   }
 
@@ -64,7 +64,7 @@ export class Logger {
     }
 
     // Console output with proper formatting
-    const prefix = `[Better Hasura History]`
+    const prefix = `[Better Hasura Console]`
     const args: any[] = [prefix, message]
 
     if (context) args.push(context)

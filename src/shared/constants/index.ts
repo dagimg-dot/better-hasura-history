@@ -1,5 +1,5 @@
 export const EXTENSION_CONFIG = {
-  NAME: 'Better Hasura History',
+  NAME: 'Better Hasura Console',
   // Version is managed in package.json and chrome.runtime.getManifest().version
   STORAGE_KEYS: {
     HISTORY: 'bhh_history',
