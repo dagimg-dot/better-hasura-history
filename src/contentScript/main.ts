@@ -87,7 +87,9 @@ export class BetterHasuraHistory {
         if (e.source !== window) return
         if (e.data.type === 'BHH_SCHEMA_REFRESHED') {
           refreshBtn.textContent = e.data.success ? 'Refresh Schema' : 'Failed'
-          setTimeout(() => { refreshBtn.textContent = 'Refresh Schema' }, 2000)
+          setTimeout(() => {
+            refreshBtn.textContent = 'Refresh Schema'
+          }, 2000)
         }
       })
       buttonContainer.insertAdjacentElement('afterend', refreshBtn)
