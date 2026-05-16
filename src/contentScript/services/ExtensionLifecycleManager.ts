@@ -81,6 +81,12 @@ export class ExtensionLifecycleManager {
     const mergedOld = SettingsManager.mergeSettings(oldSettings)
     const mergedNew = SettingsManager.mergeSettings(newSettings)
 
+    if (mergedOld.showOriginalHistory !== mergedNew.showOriginalHistory) {
+      if (this.bhhInstance) {
+        this.bhhInstance.toggleOriginalHistory(mergedNew.showOriginalHistory)
+      }
+    }
+
     if (mergedOld.logLevel !== mergedNew.logLevel) {
       logger.setLogLevel(mergedNew.logLevel)
     }
