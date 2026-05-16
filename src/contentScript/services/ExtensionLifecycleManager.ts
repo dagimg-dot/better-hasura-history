@@ -3,13 +3,14 @@ import { logger } from '@/contentScript/utils/logger'
 import { waitForElement } from '@/contentScript/utils/waitForElement'
 import { SettingsManager, type Settings } from './SettingsManager'
 import { createPageStrategy } from '@/contentScript/strategies'
+import type { PageType } from '@/shared/types/services'
 
 export class ExtensionLifecycleManager {
   private bhhInstance: BetterHasuraHistory | null = null
   private isInitialized = false
-  private currentPageType: string = 'unknown'
+  private currentPageType: PageType = 'unknown'
 
-  async initialize(pageType: string, settings?: Settings): Promise<void> {
+  async initialize(pageType: PageType, settings?: Settings): Promise<void> {
     const finalSettings = settings || (await SettingsManager.getSettings())
     this.currentPageType = pageType
 
@@ -36,8 +37,8 @@ export class ExtensionLifecycleManager {
     }
   }
 
-  private async waitForRequiredElements(pageType: string) {
-    const strategy = createPageStrategy(pageType as 'graphiql' | 'sql')
+  private async waitForRequiredElements(pageType: PageType) {
+    const strategy = createPageStrategy(pageType)
     const selectors = strategy.getRequiredSelectors()
 
     const elements = await Promise.all(selectors.map((selector) => waitForElement(selector)))

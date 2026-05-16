@@ -1,6 +1,7 @@
 import { DOMManager, HistoryService, VueAppManager } from './services'
 import { logger } from './utils/logger'
 import { createPageStrategy, type PageStrategy, type ParsedContent } from './strategies'
+import type { PageType } from '@/shared/types/services'
 
 export class BetterHasuraHistory {
   private strategy: PageStrategy
@@ -10,8 +11,8 @@ export class BetterHasuraHistory {
   private resizeObserver: ResizeObserver | null = null
   private isInitialized = false
 
-  constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: string) {
-    this.strategy = createPageStrategy(pageType as 'graphiql' | 'sql')
+  constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: PageType) {
+    this.strategy = createPageStrategy(pageType)
     this.domManager = new DOMManager(elements.buttonContainer, this.strategy)
     this.domManager.setContainers(elements.buttonContainer, elements.paneContainer)
 

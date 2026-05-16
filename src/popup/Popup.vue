@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-
-interface Settings {
-  extensionEnabled: boolean
-  showOriginalHistory: boolean
-  logLevel: 'debug' | 'info' | 'warn' | 'error'
-  adminSecret: string
-  graphqlEndpoint: string
-}
+import type { Settings } from '@/contentScript/services/SettingsManager'
 
 const settings = ref<Settings>({
   extensionEnabled: true,
