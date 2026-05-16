@@ -45,7 +45,20 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 input {
   width: 100%;
-  padding: 8px;
+  padding: 8px 10px;
   box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  background: transparent;
+}
+
+input:focus {
+  border-color: #2dbbe1;
+}
+
+input::placeholder {
+  color: #999;
 }
 </style>
