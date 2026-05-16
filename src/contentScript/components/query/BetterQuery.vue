@@ -272,10 +272,10 @@ function selectRegex(regex: string) {
 }
 
 function addToRecents(key: string, regex: string) {
-  const keys = recentKeys.value.filter(k => k !== key)
+  const keys = recentKeys.value.filter((k) => k !== key)
   recentKeys.value = [key, ...keys].slice(0, MAX_RECENT)
 
-  const regexes = recentRegexes.value.filter(r => r !== regex)
+  const regexes = recentRegexes.value.filter((r) => r !== regex)
   recentRegexes.value = [regex, ...regexes].slice(0, MAX_RECENT)
 }
 

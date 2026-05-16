@@ -156,8 +156,16 @@ const handleImport = (event: Event) => {
       const content = e.target?.result as string
       const data = JSON.parse(content)
       if (Array.isArray(data)) {
-        const count = importHistory(data)
-        alert(`Successfully imported ${count} items`)
+        const fixTimestamps = confirm(
+          'Fix timestamps of already-imported entries from this file?\n\n' +
+            'Click OK to patch timestamps of existing entries from the file. ' +
+            'Click Cancel for a normal import (new entries only).',
+        )
+        const count = importHistory(data, fixTimestamps)
+        const parts: string[] = []
+        if (count > 0) parts.push(`imported ${count} items`)
+        if (fixTimestamps) parts.push('timestamps patched')
+        alert(parts.length > 0 ? parts.join(', ') : 'No changes needed')
       } else {
         alert('Invalid backup file format (expected array)')
       }

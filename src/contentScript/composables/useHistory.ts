@@ -105,14 +105,19 @@ export function useHistory() {
           ['query', 'mutation', 'subscription', 'sql'].includes(e.operationType)
             ? (e.operationType as HistoryItem['operationType'])
             : determineOperationType(e.query),
-        timestamp: typeof e.timestamp === 'number' ? e.timestamp : Date.now(),
+        timestamp:
+          typeof e.timestamp === 'number'
+            ? e.timestamp
+            : typeof e.createdAt === 'string'
+              ? new Date(e.createdAt).getTime()
+              : Date.now(),
       }
     }
 
     return null
   }
 
-  const importHistory = (data: unknown[]) => {
+  const importHistory = (data: unknown[], overwriteTimestamps = false) => {
     let importedCount = 0
     try {
       const newItems = [...historyItems.value]
@@ -129,11 +134,23 @@ export function useHistory() {
             if (!isContentDuplicate) {
               newItems.unshift(migrated)
               importedCount++
+            } else if (overwriteTimestamps) {
+              const existing = newItems.find(
+                (e) => e.operationName === migrated.operationName && e.query === migrated.query,
+              )
+              if (existing) {
+                existing.timestamp = migrated.timestamp
+              }
+            }
+          } else if (overwriteTimestamps) {
+            const existing = newItems.find((e) => e.id === migrated.id)
+            if (existing) {
+              existing.timestamp = migrated.timestamp
             }
           }
         }
       })
-      if (importedCount > 0) historyItems.value = newItems
+      if (importedCount > 0 || overwriteTimestamps) historyItems.value = newItems
     } catch (error) {
       logger.error('Failed to import history', error as Error)
     }
