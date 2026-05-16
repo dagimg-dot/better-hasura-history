@@ -1,10 +1,8 @@
 import { EXTENSION_CONFIG } from '@/shared/constants'
-import { logger } from '../utils/logger'
-import type { PageType } from '@/shared/types/services'
+import { logger } from '@/contentScript/utils/logger'
+import type { PageType, INavigationManager } from '@/shared/types/services'
 
 const PAGE_DETECTION_DELAY = 200
-
-import type { INavigationManager } from '@/shared/types/services'
 
 export class NavigationManager implements INavigationManager {
   private observer: MutationObserver | null = null

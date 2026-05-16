@@ -1,4 +1,5 @@
 import type { PageType } from '@/shared/types/services'
+import { OPERATION_TYPES } from '@/shared/constants'
 import type { PageStrategy, EditorContent, ParsedContent, HistoryItemData } from './PageStrategy'
 
 export class GraphiQLStrategy implements PageStrategy {
@@ -52,9 +53,10 @@ export class GraphiQLStrategy implements PageStrategy {
   getHistoryItemData(content: ParsedContent): HistoryItemData {
     const editorContent = content as EditorContent
     const trimmed = (editorContent.query || editorContent.operation || '').trim().toLowerCase()
-    let operationType: 'query' | 'mutation' | 'subscription' = 'query'
-    if (trimmed.startsWith('mutation')) operationType = 'mutation'
-    else if (trimmed.startsWith('subscription')) operationType = 'subscription'
+    let operationType: 'query' | 'mutation' | 'subscription' = OPERATION_TYPES.QUERY
+    if (trimmed.startsWith(OPERATION_TYPES.MUTATION)) operationType = OPERATION_TYPES.MUTATION
+    else if (trimmed.startsWith(OPERATION_TYPES.SUBSCRIPTION))
+      operationType = OPERATION_TYPES.SUBSCRIPTION
 
     let variables: Record<string, any> = {}
     if (editorContent.variables) {

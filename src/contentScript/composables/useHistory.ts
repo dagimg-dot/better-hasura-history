@@ -1,12 +1,16 @@
 import { computed, ref } from 'vue'
-import { useStorage } from '@vueuse/core'
+import { OPERATION_TYPES } from '@/shared/constants'
 import { logger } from '@/shared/logging'
 import type { HistoryItem } from '@/shared/types/history'
 import type { PageType } from '@/shared/types/services'
+import {
+  historyItems,
+  addHistoryItem,
+  removeHistoryItem,
+  updateHistoryItem,
+  clearHistory,
+} from '@/shared/storage/historyStorage'
 
-const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undefined, {
-  shallow: true,
-})
 const isLoading = ref(false)
 const searchQuery = ref('')
 const selectedOperationType = ref<
@@ -15,7 +19,7 @@ const selectedOperationType = ref<
 
 export function useHistory() {
   const filteredItems = computed(() => {
-    let filtered = items.value
+    let filtered = historyItems.value
 
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
@@ -55,9 +59,9 @@ export function useHistory() {
 
   const determineOperationType = (query: string): 'query' | 'mutation' | 'subscription' => {
     const trimmed = query.trim().toLowerCase()
-    if (trimmed.startsWith('mutation')) return 'mutation'
-    if (trimmed.startsWith('subscription')) return 'subscription'
-    return 'query'
+    if (trimmed.startsWith(OPERATION_TYPES.MUTATION)) return OPERATION_TYPES.MUTATION
+    if (trimmed.startsWith(OPERATION_TYPES.SUBSCRIPTION)) return OPERATION_TYPES.SUBSCRIPTION
+    return OPERATION_TYPES.QUERY
   }
 
   const migrateLegacyEntry = (entry: any): HistoryItem | null => {
@@ -95,7 +99,7 @@ export function useHistory() {
   const importHistory = (data: any[]) => {
     let importedCount = 0
     try {
-      const newItems = [...items.value]
+      const newItems = [...historyItems.value]
       data.forEach((entry) => {
         const migrated = migrateLegacyEntry(entry)
         if (migrated) {
@@ -113,7 +117,7 @@ export function useHistory() {
           }
         }
       })
-      if (importedCount > 0) items.value = newItems
+      if (importedCount > 0) historyItems.value = newItems
     } catch (error) {
       logger.error('Failed to import history', error as Error)
     }
@@ -122,7 +126,7 @@ export function useHistory() {
 
   const exportHistory = (): string => {
     try {
-      const data = items.value.map((item) => ({
+      const data = historyItems.value.map((item) => ({
         id: item.id,
         operationName: item.operationName,
         query: item.query,
@@ -139,45 +143,6 @@ export function useHistory() {
     }
   }
 
-  const addHistoryItem = (item: HistoryItem) => {
-    try {
-      const existingIndex = items.value.findIndex((existing) => existing.id === item.id)
-      if (existingIndex >= 0) {
-        const newItems = [...items.value]
-        newItems[existingIndex] = item
-        items.value = newItems
-      } else {
-        items.value = [item, ...items.value]
-      }
-    } catch (error) {
-      logger.error('Failed to add history item', error as Error, { itemId: item.id })
-    }
-  }
-
-  const removeHistoryItem = (id: string) => {
-    try {
-      items.value = items.value.filter((item) => item.id !== id)
-    } catch (error) {
-      logger.error('Failed to remove history item', error as Error, { itemId: id })
-    }
-  }
-
-  const updateHistoryItem = (id: string, updates: Partial<HistoryItem>) => {
-    try {
-      items.value = items.value.map((item) => (item.id === id ? { ...item, ...updates } : item))
-    } catch (error) {
-      logger.error('Failed to update history item', error as Error, { itemId: id })
-    }
-  }
-
-  const clearHistory = () => {
-    try {
-      items.value = []
-    } catch (error) {
-      logger.error('Failed to clear history', error as Error)
-    }
-  }
-
   const loadHistory = async () => {
     isLoading.value = true
     await new Promise((r) => setTimeout(r, 50))
@@ -185,7 +150,7 @@ export function useHistory() {
   }
 
   return {
-    items: computed(() => items.value),
+    items: computed(() => historyItems.value),
     filteredItems,
     isLoading: computed(() => isLoading.value),
     searchQuery,

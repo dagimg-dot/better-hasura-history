@@ -1,4 +1,4 @@
-export type PageRoute = 'data' | 'sql' | 'graphql' | 'unknown'
+export type PageRoute = 'data' | 'sql' | 'api' | 'unknown'
 
 export interface PageInfo {
   route: PageRoute
@@ -19,7 +19,7 @@ export class RouteManager {
       path.endsWith('/console/') ||
       path === '/'
     ) {
-      return 'graphql'
+      return 'api'
     }
     return 'unknown'
   }

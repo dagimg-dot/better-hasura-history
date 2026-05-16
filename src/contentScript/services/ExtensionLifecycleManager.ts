@@ -1,8 +1,8 @@
-import BetterHasuraHistory from '../main'
-import { logger } from '../utils/logger'
-import { waitForElement } from '../utils/waitForElement'
+import BetterHasuraHistory from '@/contentScript/main'
+import { logger } from '@/contentScript/utils/logger'
+import { waitForElement } from '@/contentScript/utils/waitForElement'
 import { SettingsManager } from './SettingsManager'
-import { createPageStrategy } from '../strategies'
+import { createPageStrategy } from '@/contentScript/strategies'
 
 export class ExtensionLifecycleManager {
   private bhhInstance: BetterHasuraHistory | null = null

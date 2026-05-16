@@ -1,5 +1,6 @@
 import { EXTENSION_CONFIG } from '@/shared/constants'
-import type { PageStrategy } from '../strategies/PageStrategy'
+import { DOMError } from '@/shared/errors'
+import type { PageStrategy } from '@/contentScript/strategies/PageStrategy'
 
 export class DOMManager {
   private static readonly BUTTON_CONTAINER_ID = 'better-history-button-container'
@@ -110,7 +111,11 @@ export class DOMManager {
   }
 
   cleanup(): void {
-    this.removeButtonContainer()
-    this.removePaneContainer()
+    try {
+      this.removeButtonContainer()
+      this.removePaneContainer()
+    } catch (error) {
+      throw new DOMError('Failed to cleanup DOM containers', { error })
+    }
   }
 }
