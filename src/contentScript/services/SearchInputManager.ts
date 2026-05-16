@@ -37,6 +37,19 @@ export class SearchInputManager {
   }
 
   focus(): void {
+    const pageInfo = RouteManager.getPageInfo()
+
+    // History search input lives inside a pane that may be closed
+    if (
+      (pageInfo.route === 'api' || pageInfo.route === 'sql') &&
+      !document.querySelector('.history-search-container input')
+    ) {
+      const btn = document.querySelector<HTMLElement>('#better-history-button-container button')
+      btn?.click()
+      setTimeout(() => this.focus(), 100)
+      return
+    }
+
     const allInputs = this.getInputsForPage()
     if (allInputs.length === 0) {
       logger.debug('No search inputs found for current page')
