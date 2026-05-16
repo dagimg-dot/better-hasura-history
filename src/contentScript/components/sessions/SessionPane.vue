@@ -25,6 +25,7 @@
           v-for="session in sessions"
           :key="session.id"
           :session="session"
+          :active="session.id === activeSessionId"
           @authenticate="handleAuthenticate"
         />
       </div>
@@ -44,8 +45,27 @@ import { logger } from '@/contentScript/utils/logger'
 import type { Session } from '@/shared/types'
 
 import { computed } from 'vue'
+import { EXTENSION_CONFIG } from '@/shared/constants'
 
 const { sessions, addSession, updateSession, removeSession } = useSessions()
+
+const activeSessionId = computed(() => {
+  try {
+    const raw = localStorage.getItem(EXTENSION_CONFIG.STORAGE_KEYS.GRAPHQL_HEADERS)
+    if (!raw) return null
+    const headers = JSON.parse(raw) as Array<{
+      key: string
+      value: string
+      isActive: boolean
+    }>
+    const auth = headers.find((h) => h.key.toLowerCase() === 'authorization' && h.isActive)
+    if (!auth) return null
+    const bearerToken = auth.value.replace(/^Bearer\s+/i, '')
+    return sessions.value.find((s) => s.token === bearerToken)?.id ?? null
+  } catch {
+    return null
+  }
+})
 
 const activeAuth = computed(() => {
   const active = sessions.value.find((s) => s.status === 'success' && s.token)

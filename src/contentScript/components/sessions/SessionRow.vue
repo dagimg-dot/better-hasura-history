@@ -7,6 +7,7 @@
         @input="updateName"
         placeholder="Session name"
       />
+      <span v-if="active" class="session-active-badge">ACTIVE</span>
       <div class="session-row-actions">
         <span v-if="session.status === 'authenticating'" class="session-status authenticating">
           <span class="spinner"></span> Authenticating...
@@ -97,6 +98,7 @@ import OperationModal from './OperationModal.vue'
 
 const props = defineProps<{
   session: Session
+  active: boolean
 }>()
 
 const emit = defineEmits<{
@@ -170,6 +172,17 @@ function updateName(e: Event) {
 .session-name-input:focus {
   background: #f9fafb;
   border-radius: 2px;
+}
+
+.session-active-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
 .session-row-actions {
