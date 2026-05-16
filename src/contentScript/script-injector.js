@@ -73,25 +73,45 @@ function postSchemaRefreshed(success, methodOrError) {
 }
 
 /**
- * Refreshes the GraphQL schema via fetcher-patching + GraphiQL's _fetchSchema.
+ * Refreshes the GraphQL schema via fetcher-patching + GraphiQL's _fetchSchema,
+ * with a CWRP patch that preserves our schema through parent re-renders.
  *
- * KEY INSIGHT: We CANNOT build/push the schema ourselves because Hasura's
- * CodeMirror wrappers do instanceof GraphQLSchema checks against THEIR
- * closure-bound graphql-js. A schema built by our bundled graphql-js would
- * have a different class hierarchy and fail these checks.
+ * KEY INSIGHTS:
+ *   1. Cross-bundle instanceof issue — we can't build/push schema ourselves.
+ *      Our graphql-js schema fails Hasura's codemirror-graphql instanceof checks.
+ *      Solution: use Hasura's own _fetchSchema pipeline.
  *
- * Instead we:
- *   1. Run introspection via g.props.fetcher to get fresh data
- *   2. Patch the fetcher to return cached data for IntrospectionQuery
- *   3. Clear g.state.schema to bypass _fetchSchema's guard
- *   4. Call g._fetchSchema() — Hasura's own buildClientSchema builds the
- *      schema using THEIR graphql-js, calls setState, React lifecycle
- *      updates both editors with correct squiggles.
- *
- * The fetcher patch is kept permanently — it only intercepts
- * IntrospectionQuery, so normal operations are unaffected.
+ *   2. Schema revert on click — our _fetchSchema sets the schema, but Hasura's
+ *      wrapper passes schema as a prop. On any parent re-render (click),
+ *      GraphiQL's UNSAFE_componentWillReceiveProps overwrites state.schema
+ *      with the parent's (stale) schema prop.
+ *      Solution: patch GraphiQL's prototype CWRP to always inject our loaded
+ *      schema into nextProps, preventing the parent's prop from taking effect.
  */
 var _schemaRefreshing = false
+var _cwrpPatched = false
+
+function _patchGraphiQLCWRP(g) {
+  if (_cwrpPatched) return
+  var proto = g.constructor.prototype
+  var origCWRP = proto.UNSAFE_componentWillReceiveProps || proto.componentWillReceiveProps
+  if (!origCWRP) return
+
+  proto.UNSAFE_componentWillReceiveProps = function (nextProps) {
+    // Hasura's wrapper passes schema as a prop. On every parent re-render
+    // (triggered by clicks), CWRP overwrites our freshly loaded schema with
+    // the parent's stale schema. Fix: inject our current schema into nextProps,
+    // overriding whatever the parent passed.
+    if (this.state && this.state.schema) {
+      var preserved = Object.assign({}, nextProps, { schema: this.state.schema })
+      return origCWRP.call(this, preserved)
+    }
+    return origCWRP.call(this, nextProps)
+  }
+
+  _cwrpPatched = true
+  _bhhLog('CWRP patched — schema preserved through parent re-renders')
+}
 
 function refreshSchema() {
   var g = window.g
@@ -128,6 +148,9 @@ function refreshSchema() {
       setTimeout(function () {
         g.props.fetcher = origFetcher
       }, 5000)
+
+      // Install CWRP patch BEFORE calling _fetchSchema
+      _patchGraphiQLCWRP(g)
 
       // Clear guard and trigger Hasura's schema pipeline
       g.state.schema = undefined
