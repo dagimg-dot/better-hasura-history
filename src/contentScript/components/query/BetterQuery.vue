@@ -80,16 +80,13 @@
       </button>
     </div>
 
-    <div v-if="isSearching" class="better-query-loading">
-      <i class="fa fa-spinner fa-spin"></i> Scanning tracked tables...
-    </div>
+    <div v-if="error && !isSearching" class="better-query-error">{{ error }}</div>
 
-    <div v-else-if="error" class="better-query-error">{{ error }}</div>
-
-    <div v-else-if="results.length > 0" class="better-query-results">
+    <div v-if="results.length > 0" class="better-query-results">
       <div class="better-query-results-summary">
         Found {{ totalMatchCount }} match{{ totalMatchCount !== 1 ? 'es' : '' }} across
-        {{ groupedResults.length }} table{{ groupedResults.length !== 1 ? 's' : '' }}
+        {{ groupedResults.length }} table{{ groupedResults.length !== 1 ? 's' : ''
+        }}<span v-if="isSearching"> (loading...)</span>
       </div>
       <div v-for="(group, idx) in groupedResults" :key="idx" class="better-query-table-group">
         <div class="better-query-table-name">{{ group.tableDisplayName }}</div>
@@ -109,7 +106,14 @@
       </div>
     </div>
 
-    <div v-else-if="hasSearched && !isSearching" class="better-query-no-results">
+    <div v-if="isSearching" class="better-query-loading">
+      <i class="fa fa-spinner fa-spin"></i> Scanning tables...
+    </div>
+
+    <div
+      v-if="hasSearched && results.length === 0 && !isSearching && !error"
+      class="better-query-no-results"
+    >
       No matches found
     </div>
   </div>
@@ -123,6 +127,7 @@ import {
   SEARCH_MODE_OPTIONS,
   type SearchMode,
   type SearchResult,
+  type ColumnInfo,
 } from '@/contentScript/services/BetterQueryService'
 import { logger } from '@/shared/logging'
 
@@ -179,6 +184,29 @@ watchDebounced(
     selectedRegexIdx.value = 0
   },
   { debounce: 100, maxWait: 300 },
+)
+
+// Phase 3: Background pre-fetch columns when regex input settles
+const prefetchedColumns = ref<ColumnInfo[] | null>(null)
+let prefetchedRegex = ''
+
+watchDebounced(
+  regexInput,
+  async (val: string) => {
+    const regex = val.trim()
+    if (!regex) {
+      prefetchedColumns.value = null
+      return
+    }
+    try {
+      const columns = await BetterQueryService.findMatchingColumns(regex)
+      prefetchedColumns.value = columns
+      prefetchedRegex = regex
+    } catch {
+      // Pre-fetch errors are non-critical; search will retry
+    }
+  },
+  { debounce: 500, maxWait: 1500 },
 )
 
 function handleKeyKeydown(e: KeyboardEvent) {
@@ -274,15 +302,31 @@ async function handleSearch() {
   results.value = []
 
   try {
-    const columns = await BetterQueryService.findMatchingColumns(regex)
+    // Use pre-fetched columns if regex matches; otherwise discover fresh
+    let columns: ColumnInfo[] | null = null
+    if (prefetchedRegex === regex && prefetchedColumns.value) {
+      columns = prefetchedColumns.value
+    }
+    if (!columns) {
+      columns = await BetterQueryService.findMatchingColumns(regex)
+    }
     if (columns.length === 0) {
       hasSearched.value = true
       isSearching.value = false
       return
     }
 
-    const searchResults = await BetterQueryService.searchInTables(key, columns, searchMode.value)
-    results.value = searchResults
+    await BetterQueryService.searchInTablesBatched(
+      key,
+      columns,
+      searchMode.value,
+      (batch) => {
+        results.value = [...results.value, ...batch]
+      },
+      (err) => {
+        logger.error('BetterQuery: batch search error', err)
+      },
+    )
     hasSearched.value = true
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Search failed'
