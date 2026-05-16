@@ -65,7 +65,6 @@ export class ExtensionLifecycleManager {
         this.bhhInstance = null
       }
       this.isInitialized = false
-      this.currentPageType = 'unknown'
       logger.info('Extension cleanup completed')
     } catch (error) {
       logger.error('Error during cleanup', error as Error)
@@ -103,7 +102,8 @@ export class ExtensionLifecycleManager {
 
     if (mergedOld.extensionEnabled !== mergedNew.extensionEnabled) {
       if (mergedNew.extensionEnabled) {
-        await this.initialize(this.currentPageType || 'graphiql', mergedNew)
+        const pageType = this.currentPageType !== 'unknown' ? this.currentPageType : 'graphiql'
+        await this.initialize(pageType, mergedNew)
       } else {
         this.cleanup()
       }
