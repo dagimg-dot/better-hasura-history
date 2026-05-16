@@ -19,6 +19,8 @@ export const EXTENSION_CONFIG = {
     HISTORY_SEARCH_INPUT: '.history-search-container input',
     EXECUTE_BUTTON: '.execute-button',
     RUN_SQL: '[data-test="run-sql"]',
+    API_REQUEST_BLOCK: '#apiRequestBlock',
+    API_REQUEST_ENDPOINT_INPUT: '#apiRequestBlock input[readonly]',
   },
 } as const
 

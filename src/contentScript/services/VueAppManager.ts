@@ -1,6 +1,8 @@
-import { type App, createApp } from 'vue'
+import { createApp, type App } from 'vue'
 import { ToolbarButtons } from '@/contentScript/components/controls'
 import { HistoryPane } from '@/contentScript/components/history'
+import { BetterQuery } from '@/contentScript/components/query'
+import { SessionPane } from '@/contentScript/components/sessions'
 import { VueAppError } from '@/shared/errors'
 import { logger } from '@/contentScript/utils/logger'
 import type { IVueAppManager } from '@/shared/types/services'
@@ -8,6 +10,10 @@ import type { IVueAppManager } from '@/shared/types/services'
 export class VueAppManager implements IVueAppManager {
   private buttonApp: App | null = null
   private paneApp: App | null = null
+  private sessionPaneApp: App | null = null
+  private sessionPaneContainer: HTMLElement | null = null
+  private betterQueryApp: App | null = null
+  private betterQueryContainer: HTMLElement | null = null
   private isInitialized = false
 
   initializeApps(buttonContainer: HTMLElement, paneContainer: HTMLElement): void {
@@ -50,8 +56,88 @@ export class VueAppManager implements IVueAppManager {
     }
   }
 
+  injectSessionPane(apiBlock: HTMLElement): void {
+    const lastDetails = apiBlock.querySelector('details:last-of-type')
+    if (!lastDetails) {
+      logger.debug('SessionPane: no <details> found in #apiRequestBlock')
+      return
+    }
+
+    const container = document.createElement('div')
+    container.id = 'better-session-container'
+    container.setAttribute('data-v-app', '')
+
+    try {
+      lastDetails.insertAdjacentElement('afterend', container)
+      this.sessionPaneApp = createApp(SessionPane)
+      this.sessionPaneApp.config.errorHandler = (err, instance, info) => {
+        logger.error('SessionPane app error:', err as Error, { info })
+      }
+      this.sessionPaneContainer = container
+      this.sessionPaneApp.mount(container)
+      logger.debug('SessionPane mounted')
+    } catch (error) {
+      container.remove()
+      this.sessionPaneApp = null
+      this.sessionPaneContainer = null
+      throw new VueAppError('Failed to create session pane app', { error })
+    }
+  }
+
+  removeSessionPane(): void {
+    try {
+      this.sessionPaneApp?.unmount()
+      this.sessionPaneApp = null
+    } catch (error) {
+      logger.error('Error during SessionPane unmount', error as Error)
+      this.sessionPaneApp = null
+    }
+
+    if (this.sessionPaneContainer) {
+      this.sessionPaneContainer.remove()
+      this.sessionPaneContainer = null
+    }
+  }
+
+  injectBetterQuery(runButton: HTMLElement): void {
+    const container = document.createElement('div')
+    runButton.insertAdjacentElement('afterend', container)
+
+    try {
+      this.betterQueryApp = createApp(BetterQuery)
+      this.betterQueryApp.config.errorHandler = (err, instance, info) => {
+        logger.error('BetterQuery app error:', err as Error, { info })
+      }
+      this.betterQueryContainer = container
+      this.betterQueryApp.mount(container)
+      logger.debug('BetterQuery mounted')
+    } catch (error) {
+      container.remove()
+      this.betterQueryApp = null
+      this.betterQueryContainer = null
+      throw new VueAppError('Failed to create BetterQuery app', { error })
+    }
+  }
+
+  removeBetterQuery(): void {
+    try {
+      this.betterQueryApp?.unmount()
+      this.betterQueryApp = null
+    } catch (error) {
+      logger.error('Error during BetterQuery unmount', error as Error)
+      this.betterQueryApp = null
+    }
+
+    if (this.betterQueryContainer) {
+      this.betterQueryContainer.remove()
+      this.betterQueryContainer = null
+    }
+  }
+
   cleanup(): void {
     try {
+      this.removeSessionPane()
+      this.removeBetterQuery()
       this.buttonApp?.unmount()
       this.buttonApp = null
       this.paneApp?.unmount()

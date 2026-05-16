@@ -12,7 +12,9 @@ interface HeaderEntry {
 }
 
 function getGraphQLEndpoint(): string | null {
-  const input = document.querySelector<HTMLInputElement>('#apiRequestBlock input[readonly]')
+  const input = document.querySelector<HTMLInputElement>(
+    EXTENSION_CONFIG.DOM_SELECTORS.API_REQUEST_ENDPOINT_INPUT,
+  )
   return input?.value?.trim() || null
 }
 

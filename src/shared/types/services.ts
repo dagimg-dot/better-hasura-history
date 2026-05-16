@@ -1,5 +1,9 @@
 export interface IVueAppManager {
   initializeApps(buttonContainer: HTMLElement, paneContainer: HTMLElement): void
+  injectSessionPane(apiBlock: HTMLElement): void
+  removeSessionPane(): void
+  injectBetterQuery(runButton: HTMLElement): void
+  removeBetterQuery(): void
   cleanup(): void
   readonly initialized: boolean
 }
