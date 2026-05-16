@@ -7,27 +7,33 @@
   </p>
 </div>
 
-A Chrome extension that enhances the Hasura Console with an improved history panel, cross-table search, and per-host connection management.
+A Chrome extension that enhances the Hasura Console with session-based auth, an improved history panel, and cross-table search.
 
-## Overview
+## Features
 
-Better Hasura Console replaces the built-in GraphiQL history with a persistent, searchable panel that survives page reloads. It extends into the Data and SQL sections with table search, and adds a powerful query tool for searching content across all your database tables at once.
+### Session Management
+
+- Manage multiple authentication sessions — each with its own GraphQL mutation and variables
+- JWT-based authentication: runs your mutation, extracts the token, sets it as `Authorization: Bearer` in the request headers
+- Switch between sessions without re-authenticating — one-click active/inactive toggle, no server round-trip
+- Decodes the JWT and extracts a role name from the payload
+- Auth status bar shows the active Bearer token and decoded role in real time
+- Sessions persist in localStorage across page reloads
 
 ### History Panel
 
-- Persistent operation history across sessions with unlimited storage
+- Persistent operation history with unlimited storage
 - Fuzzy search through past queries and mutations
 - Edit operation names for easy identification
 - Delete individual entries or clear all history
 - View full operation text and variables on hover (Ctrl + hover)
-- Works in both GraphiQL and Raw SQL modes
-- Toggle between enhanced and original history views
+- Works in both GraphiQL and Raw SQL pages
 
 ### Cross-Table Search
 
 - Search for a value across all tables in your database schema
 - Regex-based column discovery to target specific fields
-- Progressive streaming results -- data appears as each batch of tables resolves
+- Progressive streaming results — data appears as each batch of tables resolves
 - Column discovery caching for repeat searches
 - Background pre-fetch of matching columns while you type
 
@@ -35,14 +41,6 @@ Better Hasura Console replaces the built-in GraphiQL history with a persistent, 
 
 - Quick-filter tables in the Data Manager sidebar
 - Instant filtering as you type
-- Injected directly into the Hasura page for native feel
-
-### Connection Management
-
-- Per-host GraphQL endpoint and admin secret configuration
-- Auto-discovery of endpoint from the current tab URL
-- Database source name configuration for fast Postgres queries
-- Global fallback settings for new hosts
 
 ## Installing
 
