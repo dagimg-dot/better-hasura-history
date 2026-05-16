@@ -77,7 +77,7 @@ export const TableService = {
   },
 
   async fetchTables(): Promise<void> {
-    const settings = await SettingsManager.getSettings()
+    const settings = await SettingsManager.getCurrentHostSettings()
     const { adminSecret, graphqlEndpoint } = settings
 
     logger.debug('fetchTables called', { hasAdminSecret: !!adminSecret, graphqlEndpoint })

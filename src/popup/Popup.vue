@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import type { Settings } from '@/contentScript/services/SettingsManager'
+import { computed, onMounted, ref, watch } from 'vue'
+import type { HostConfig, Settings } from '@/contentScript/services/SettingsManager'
 
 const settings = ref<Settings>({
   extensionEnabled: true,
@@ -8,6 +8,25 @@ const settings = ref<Settings>({
   logLevel: 'info',
   adminSecret: '',
   graphqlEndpoint: '',
+  hosts: {},
+})
+
+const currentHost = ref('')
+
+const currentHostConfig = computed({
+  get: (): HostConfig => {
+    const host = currentHost.value
+    if (!host) return { adminSecret: '', graphqlEndpoint: '' }
+    return settings.value.hosts?.[host] ?? { adminSecret: '', graphqlEndpoint: '' }
+  },
+  set: (config: HostConfig) => {
+    const host = currentHost.value
+    if (!host) return
+    if (!settings.value.hosts) {
+      settings.value.hosts = {}
+    }
+    settings.value.hosts[host] = config
+  },
 })
 
 onMounted(() => {
@@ -17,6 +36,34 @@ onMounted(() => {
     } else {
       chrome.storage.local.set({ settings: settings.value })
     }
+
+    // Detect current tab hostname
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0]
+      if (!tab?.url) return
+      try {
+        const url = new URL(tab.url)
+        const host = url.port ? `${url.hostname}:${url.port}` : url.hostname
+
+        // Only show per-host section for http/https URLs
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+
+        currentHost.value = host
+
+        // Auto-init host config with URL origin as endpoint if not yet set
+        if (!settings.value.hosts?.[host]) {
+          if (!settings.value.hosts) {
+            settings.value.hosts = {}
+          }
+          settings.value.hosts[host] = {
+            adminSecret: '',
+            graphqlEndpoint: url.origin,
+          }
+        }
+      } catch {
+        // Invalid URL — skip
+      }
+    })
   })
 })
 
@@ -73,6 +120,54 @@ watch(
         <p class="description">Higher levels reduce console noise.</p>
       </div>
 
+      <!-- Per-host credentials section -->
+      <template v-if="currentHost">
+        <div class="section-divider">
+          <span class="section-label">{{ currentHost }}</span>
+        </div>
+
+        <div class="setting-col">
+          <label :for="'host-endpoint-' + currentHost">GraphQL Endpoint</label>
+          <input
+            :id="'host-endpoint-' + currentHost"
+            type="text"
+            class="text-input"
+            :placeholder="'http://' + currentHost"
+            :value="currentHostConfig.graphqlEndpoint"
+            @input="
+              currentHostConfig = {
+                ...currentHostConfig,
+                graphqlEndpoint: ($event.target as HTMLInputElement).value,
+              }
+            "
+          />
+          <p class="description">Per-host endpoint for {{ currentHost }}</p>
+        </div>
+
+        <div class="setting-col">
+          <label :for="'host-secret-' + currentHost">Admin Secret</label>
+          <input
+            :id="'host-secret-' + currentHost"
+            type="password"
+            class="text-input"
+            placeholder="Enter admin secret for {{ currentHost }}"
+            :value="currentHostConfig.adminSecret"
+            @input="
+              currentHostConfig = {
+                ...currentHostConfig,
+                adminSecret: ($event.target as HTMLInputElement).value,
+              }
+            "
+          />
+          <p class="description">Per-host admin secret for {{ currentHost }}</p>
+        </div>
+      </template>
+
+      <!-- Global fallback credentials -->
+      <div class="section-divider">
+        <span class="section-label">Global Fallback</span>
+      </div>
+
       <div class="setting-col">
         <label for="graphql-endpoint">GraphQL Endpoint</label>
         <input
@@ -82,7 +177,7 @@ watch(
           class="text-input"
           placeholder="http://localhost:6083"
         />
-        <p class="description">Your Hasura console URL (e.g., http://localhost:6083)</p>
+        <p class="description">Fallback endpoint used when no per-host value is set</p>
       </div>
 
       <div class="setting-col">
@@ -94,7 +189,7 @@ watch(
           class="text-input"
           placeholder="Enter admin secret"
         />
-        <p class="description">Required for fetching table metadata</p>
+        <p class="description">Fallback admin secret used when no per-host value is set</p>
       </div>
     </div>
   </main>
@@ -204,6 +299,29 @@ h1 {
 
 .text-input:focus {
   border-color: var(--primary-color);
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #4a5568;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .description {

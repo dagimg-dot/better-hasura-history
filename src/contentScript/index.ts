@@ -5,6 +5,7 @@ import {
   RouteManager,
   SearchInputManager,
   SettingsManager,
+  TableService,
 } from './services'
 import { logger } from './utils/logger'
 import type { PageType } from '@/shared/types/services'
@@ -121,6 +122,39 @@ function setupTableSearchObserver(): void {
   observer.observe(document.body, { childList: true, subtree: true })
 }
 
+async function autoDiscoverAdminSecret(): Promise<void> {
+  try {
+    const secret = localStorage.getItem('console:adminSecret')
+    if (!secret) return
+
+    const hostname = SettingsManager.getCurrentHost()
+    const settings = await SettingsManager.getSettings()
+    const existing = settings.hosts?.[hostname]
+    const autoGraphqlEndpoint = `${window.location.protocol}//${hostname}`
+
+    if (existing?.adminSecret && existing?.graphqlEndpoint) {
+      if (TableService.getTables().length > 0) return
+      TableService.fetchTables().catch((err) => {
+        logger.error('Auto-fetch tables failed', err as Error)
+      })
+      return
+    }
+    if (settings.adminSecret === secret && settings.graphqlEndpoint === autoGraphqlEndpoint) return
+
+    await SettingsManager.saveHostSettings(hostname, {
+      adminSecret: secret,
+      graphqlEndpoint: autoGraphqlEndpoint,
+    })
+    logger.info('Auto-discovered credentials for', { hostname })
+
+    TableService.fetchTables().catch((err) => {
+      logger.error('Auto-fetch tables failed', err as Error)
+    })
+  } catch (error) {
+    logger.error('Auto-discover failed', error as Error)
+  }
+}
+
 const lifecycleManager = new ExtensionLifecycleManager()
 
 function initializeNavigation(): void {
@@ -137,6 +171,8 @@ function initializeNavigation(): void {
           const { setPageFilter } = useHistory()
           setPageType(pageType)
           setPageFilter(pageType)
+
+          autoDiscoverAdminSecret()
         }
       })
     },
