@@ -127,7 +127,9 @@ window.addEventListener(
           if (value) {
             try {
               editor.setValue(JSON.stringify(JSON.parse(value), null, 2))
-            } catch {}
+            } catch (e) {
+              console.warn('[Better Hasura History] Failed to prettify variables:', e)
+            }
           }
         }
       })

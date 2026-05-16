@@ -1,10 +1,12 @@
+import { EXTENSION_CONFIG } from '@/shared/constants'
 import { logger } from '../utils/logger'
-
-export type PageType = 'graphiql' | 'sql' | 'unknown'
+import type { PageType } from '@/shared/types/services'
 
 const PAGE_DETECTION_DELAY = 200
 
-export class NavigationManager {
+import type { INavigationManager } from '@/shared/types/services'
+
+export class NavigationManager implements INavigationManager {
   private observer: MutationObserver | null = null
   private isExtensionActive = false
   private currentPageType: PageType = 'unknown'
@@ -40,7 +42,7 @@ export class NavigationManager {
   }
 
   private isApiExplorerVisible(): boolean {
-    return !!document.querySelector('.graphiql-container')
+    return !!document.querySelector(EXTENSION_CONFIG.DOM_SELECTORS.GRAPHIQL_CONTAINER)
   }
 
   private isSqlPageVisible(): boolean {

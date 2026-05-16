@@ -1,3 +1,4 @@
+import { EXTENSION_CONFIG } from '@/shared/constants'
 import {
   ExtensionLifecycleManager,
   NavigationManager,
@@ -6,7 +7,7 @@ import {
   SettingsManager,
 } from './services'
 import { logger } from './utils/logger'
-import type { PageType } from './services/NavigationManager'
+import type { PageType } from '@/shared/types/services'
 import { useExtensionState } from './composables/useExtensionState'
 import { useHistory } from './composables/useHistory'
 import { TableSearch } from './components/table'
@@ -58,7 +59,7 @@ async function injectTableSearch(): Promise<void> {
 
   if (tableSearchInjected) return
 
-  const tableLinks = document.querySelector('[data-test="table-links"]')
+  const tableLinks = document.querySelector(EXTENSION_CONFIG.DOM_SELECTORS.TABLE_LINKS)
   if (!tableLinks) {
     logger.debug('Table links element not found, waiting...')
     return

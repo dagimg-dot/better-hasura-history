@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { logger } from '@/shared/logging'
 import type { HistoryItem } from '@/shared/types/history'
-import type { PageType } from '../services/NavigationManager'
+import type { PageType } from '@/shared/types/services'
 
 const items = useStorage<HistoryItem[]>('better-hasura-history-items', [], undefined, {
   shallow: true,

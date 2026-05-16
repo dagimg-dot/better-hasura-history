@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
-import type { PageType } from '../services/NavigationManager'
+import type { PageType } from '@/shared/types/services'
 
 const isPaneOpenGraphiqlStorage = useStorage<boolean>(
   'better-hasura-history-pane-open-graphiql',

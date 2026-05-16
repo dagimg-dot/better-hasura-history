@@ -1,6 +1,5 @@
-import type { PageType } from '../services/NavigationManager'
-import type { HistoryItem } from '@/shared/types/history'
-import type { PageStrategy, SqlContent, ParsedContent } from './PageStrategy'
+import type { PageType } from '@/shared/types/services'
+import type { PageStrategy, SqlContent, ParsedContent, HistoryItemData } from './PageStrategy'
 
 export class SqlStrategy implements PageStrategy {
   readonly pageType: PageType = 'sql'
@@ -126,7 +125,7 @@ export class SqlStrategy implements PageStrategy {
     return container
   }
 
-  getHistoryItemData(content: ParsedContent): Partial<HistoryItem> {
+  getHistoryItemData(content: ParsedContent): HistoryItemData {
     const sqlContent = content as SqlContent
     return {
       operationName: sqlContent.operation_name,

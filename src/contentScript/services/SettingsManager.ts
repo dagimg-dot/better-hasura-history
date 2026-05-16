@@ -1,4 +1,6 @@
 import type { LogLevel } from '@/shared/logging/Logger'
+import { StorageError } from '@/shared/errors'
+import { logger } from '@/shared/logging'
 
 interface Settings {
   extensionEnabled: boolean
@@ -20,18 +22,30 @@ export class SettingsManager {
   static async getSettings(): Promise<Settings> {
     return new Promise((resolve) => {
       chrome.storage.local.get(['settings'], (result) => {
+        if (chrome.runtime.lastError) {
+          logger.error(
+            'Failed to load settings',
+            new StorageError(chrome.runtime.lastError.message || 'Unknown error'),
+          )
+        }
         resolve(this.mergeSettings(result.settings))
       })
     })
   }
 
-  static mergeSettings(stored: any): Settings {
+  static mergeSettings(stored: Record<string, unknown> | undefined): Settings {
     return { ...this.DEFAULT_SETTINGS, ...stored }
   }
 
   static async saveSettings(settings: Partial<Settings>): Promise<void> {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ settings: this.mergeSettings(settings) }, () => resolve())
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.set({ settings: this.mergeSettings(settings) }, () => {
+        if (chrome.runtime.lastError) {
+          reject(new StorageError('Failed to save settings', { error: chrome.runtime.lastError }))
+          return
+        }
+        resolve()
+      })
     })
   }
 }

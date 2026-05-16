@@ -38,11 +38,7 @@ export class BetterHasuraHistory {
     if (type === messageTypes.contentResponse) {
       try {
         const historyData = this.strategy.getHistoryItemData(data as ParsedContent)
-        const entry = HistoryService.addEntry({
-          ...historyData,
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-        } as any)
+        const entry = HistoryService.addEntry({ ...historyData })
         if (entry) {
           logger.info(`New history entry added: ${entry.operationName}`)
         }

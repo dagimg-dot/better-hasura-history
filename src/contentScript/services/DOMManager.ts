@@ -1,3 +1,4 @@
+import { EXTENSION_CONFIG } from '@/shared/constants'
 import type { PageStrategy } from '../strategies/PageStrategy'
 
 export class DOMManager {
@@ -52,7 +53,7 @@ export class DOMManager {
   }
 
   createPrettifyButton(): HTMLButtonElement | null {
-    const titleEl = document.getElementById('variable-editor-title')
+    const titleEl = document.getElementById(EXTENSION_CONFIG.DOM_SELECTORS.VARIABLE_EDITOR_TITLE)
     if (!titleEl) return null
 
     const existingBtn = titleEl.querySelector('.bhh-prettify-btn')
@@ -95,7 +96,9 @@ export class DOMManager {
   }
 
   findOriginalHistoryButton(): HTMLElement | null {
-    return this.container.querySelector('.toolbar-button[title="Show History"]') as HTMLElement
+    return this.container.querySelector(
+      EXTENSION_CONFIG.DOM_SELECTORS.HISTORY_BUTTON,
+    ) as HTMLElement
   }
 
   removeButtonContainer(): void {

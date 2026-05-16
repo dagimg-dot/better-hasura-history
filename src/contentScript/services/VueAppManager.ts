@@ -1,9 +1,11 @@
 import { type App, createApp } from 'vue'
 import { BetterHistoryBtn } from '@/contentScript/components/controls'
 import { HistoryPane } from '@/contentScript/components/history'
+import { VueAppError } from '@/shared/errors'
 import { logger } from '@/contentScript/utils/logger'
+import type { IVueAppManager } from '@/shared/types/services'
 
-export class VueAppManager {
+export class VueAppManager implements IVueAppManager {
   private buttonApp: App | null = null
   private paneApp: App | null = null
   private isInitialized = false
@@ -25,19 +27,27 @@ export class VueAppManager {
   }
 
   private createButtonApp(container: HTMLElement): void {
-    this.buttonApp = createApp(BetterHistoryBtn)
-    this.buttonApp.config.errorHandler = (err, instance, info) => {
-      logger.error('Button app error:', err as Error, { info })
+    try {
+      this.buttonApp = createApp(BetterHistoryBtn)
+      this.buttonApp.config.errorHandler = (err, instance, info) => {
+        logger.error('Button app error:', err as Error, { info })
+      }
+      this.buttonApp.mount(container)
+    } catch (error) {
+      throw new VueAppError('Failed to create button app', { error })
     }
-    this.buttonApp.mount(container)
   }
 
   private createPaneApp(container: HTMLElement): void {
-    this.paneApp = createApp(HistoryPane)
-    this.paneApp.config.errorHandler = (err, instance, info) => {
-      logger.error('Pane app error:', err as Error, { info })
+    try {
+      this.paneApp = createApp(HistoryPane)
+      this.paneApp.config.errorHandler = (err, instance, info) => {
+        logger.error('Pane app error:', err as Error, { info })
+      }
+      this.paneApp.mount(container)
+    } catch (error) {
+      throw new VueAppError('Failed to create pane app', { error })
     }
-    this.paneApp.mount(container)
   }
 
   cleanup(): void {

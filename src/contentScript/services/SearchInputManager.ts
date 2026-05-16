@@ -1,3 +1,4 @@
+import { EXTENSION_CONFIG } from '@/shared/constants'
 import { RouteManager, type PageRoute } from './RouteManager'
 import { logger } from '../utils/logger'
 
@@ -7,8 +8,8 @@ interface SearchInputCollector {
 }
 
 const SEARCH_INPUT_COLLECTORS: SearchInputCollector[] = [
-  { selector: '.table-search-container input', routes: ['data', 'sql'] },
-  { selector: '.history-search-container input', routes: ['sql', 'graphql'] },
+  { selector: EXTENSION_CONFIG.DOM_SELECTORS.TABLE_SEARCH_INPUT, routes: ['data', 'sql'] },
+  { selector: EXTENSION_CONFIG.DOM_SELECTORS.HISTORY_SEARCH_INPUT, routes: ['sql', 'graphql'] },
 ]
 
 export class SearchInputManager {

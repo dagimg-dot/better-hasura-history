@@ -1,5 +1,4 @@
-import type { PageType } from '../services/NavigationManager'
-import type { HistoryItem } from '@/shared/types/history'
+import type { PageType } from '@/shared/types/services'
 
 export interface EditorContent {
   query?: string
@@ -14,6 +13,13 @@ export interface SqlContent {
 }
 
 export type ParsedContent = EditorContent | SqlContent
+
+export interface HistoryItemData {
+  operationName: string
+  query: string
+  variables?: Record<string, any>
+  operationType: 'query' | 'mutation' | 'subscription' | 'sql'
+}
 
 export interface PageStrategy {
   readonly pageType: PageType
@@ -35,7 +41,7 @@ export interface PageStrategy {
   createButtonElement(): HTMLDivElement
   createPaneElement(): HTMLDivElement
 
-  getHistoryItemData(content: ParsedContent): Partial<HistoryItem>
+  getHistoryItemData(content: ParsedContent): HistoryItemData
   getMessageTypes(): {
     getContent: string
     contentResponse: string

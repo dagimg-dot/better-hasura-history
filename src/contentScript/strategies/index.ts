@@ -1,4 +1,4 @@
-import type { PageType } from '../services/NavigationManager'
+import type { PageType } from '@/shared/types/services'
 import type { PageStrategy } from './PageStrategy'
 import { GraphiQLStrategy } from './GraphiQLStrategy'
 import { SqlStrategy } from './SqlStrategy'
@@ -15,4 +15,10 @@ export function createPageStrategy(pageType: PageType): PageStrategy {
 }
 
 export { GraphiQLStrategy, SqlStrategy }
-export type { PageStrategy, EditorContent, SqlContent, ParsedContent } from './PageStrategy'
+export type {
+  PageStrategy,
+  EditorContent,
+  SqlContent,
+  ParsedContent,
+  HistoryItemData,
+} from './PageStrategy'

@@ -1,6 +1,5 @@
-import type { PageType } from '../services/NavigationManager'
-import type { HistoryItem } from '@/shared/types/history'
-import type { PageStrategy, EditorContent, ParsedContent } from './PageStrategy'
+import type { PageType } from '@/shared/types/services'
+import type { PageStrategy, EditorContent, ParsedContent, HistoryItemData } from './PageStrategy'
 
 export class GraphiQLStrategy implements PageStrategy {
   readonly pageType: PageType = 'graphiql'
@@ -50,7 +49,7 @@ export class GraphiQLStrategy implements PageStrategy {
     return container
   }
 
-  getHistoryItemData(content: ParsedContent): Partial<HistoryItem> {
+  getHistoryItemData(content: ParsedContent): HistoryItemData {
     const editorContent = content as EditorContent
     const trimmed = (editorContent.query || editorContent.operation || '').trim().toLowerCase()
     let operationType: 'query' | 'mutation' | 'subscription' = 'query'

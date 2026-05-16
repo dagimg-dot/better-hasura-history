@@ -11,13 +11,9 @@ if (manifest.web_accessible_resources) {
   manifest.web_accessible_resources = [
     {
       matches: ['<all_urls>'],
-      resources: [
-        'img/*',
-        'src/contentScript/script-injector.js',
-        'assets/*'
-      ],
-      use_dynamic_url: false
-    }
+      resources: ['img/*', 'src/contentScript/script-injector.js', 'assets/*'],
+      use_dynamic_url: false,
+    },
   ]
 }
 
