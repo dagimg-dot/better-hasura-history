@@ -29,7 +29,16 @@ function readHeadersFromLS(): HeaderEntry[] {
 }
 
 function writeHeadersToLS(headers: HeaderEntry[]): void {
-  localStorage.setItem(HEADERS_LS_KEY, JSON.stringify(headers))
+  const serialized = JSON.stringify(headers)
+  localStorage.setItem(HEADERS_LS_KEY, serialized)
+
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key: HEADERS_LS_KEY,
+      newValue: serialized,
+      storageArea: localStorage,
+    }),
+  )
 }
 
 function buildRequestHeaders(headers: HeaderEntry[]): Record<string, string> {
