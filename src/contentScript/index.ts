@@ -13,6 +13,7 @@ import type { Settings } from './services/SettingsManager'
 import { useExtensionState } from './composables/useExtensionState'
 import { useHistory } from './composables/useHistory'
 import { TableSearch } from './components/table'
+import type { App } from 'vue'
 
 const script = document.createElement('script')
 script.src = chrome.runtime.getURL('src/contentScript/script-injector.js')
@@ -28,6 +29,8 @@ window.addEventListener('message', (event) => {
 })
 
 let tableSearchInjected = false
+let tableSearchApp: App<Element> | null = null
+let extensionEnabled = true
 let currentRoute: string = 'unknown'
 
 const searchInputManager = new SearchInputManager()
@@ -49,7 +52,27 @@ function resetTableSearchState(): void {
   currentRoute = 'unknown'
 }
 
+function removeTableSearch(): void {
+  if (tableSearchApp) {
+    tableSearchApp.unmount()
+    tableSearchApp = null
+  }
+  const wrapper = document.querySelector('.bhh-table-search-wrapper')
+  if (!wrapper) return
+
+  const parent = wrapper.parentElement
+  // Restore dbSection if it was moved inside wrapper during injection
+  const dbSection = wrapper.querySelector('.P72YYDnHxrZnFQaKXXUxI')
+  if (dbSection && parent) {
+    parent.insertBefore(dbSection, wrapper)
+  }
+  wrapper.remove()
+  tableSearchInjected = false
+  logger.debug('Table search removed')
+}
+
 async function injectTableSearch(): Promise<void> {
+  if (!extensionEnabled) return
   const pageInfo = RouteManager.getPageInfo()
 
   if (pageInfo.route === 'data' || pageInfo.route === 'sql') {
@@ -100,6 +123,7 @@ async function injectTableSearch(): Promise<void> {
 
     const { createApp } = await import('vue')
     const app = createApp(TableSearch)
+    tableSearchApp = app
     app.mount(vueApp)
 
     tableSearchInjected = true
@@ -111,6 +135,7 @@ async function injectTableSearch(): Promise<void> {
 
 function setupTableSearchObserver(): void {
   const observer = new MutationObserver(() => {
+    if (!extensionEnabled) return
     const pageInfo = RouteManager.getPageInfo()
     if (pageInfo.route === 'data' || pageInfo.route === 'sql') {
       injectTableSearch()
@@ -194,6 +219,9 @@ function initializeNavigation(): void {
 }
 
 try {
+  SettingsManager.getSettings().then((s) => {
+    extensionEnabled = s.extensionEnabled !== false
+  })
   initializeNavigation()
 } catch (error) {
   logger.error('Failed to start navigation manager', error as Error)
@@ -204,6 +232,14 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
   try {
     const { oldValue, newValue } = changes.settings
+    const mergedNew = SettingsManager.mergeSettings(newValue)
+
+    extensionEnabled = mergedNew.extensionEnabled !== false
+
+    if (!mergedNew.extensionEnabled) {
+      removeTableSearch()
+    }
+
     await lifecycleManager.handleSettingsChange(oldValue, newValue)
   } catch (error) {
     logger.error('Error handling settings change', error as Error)
