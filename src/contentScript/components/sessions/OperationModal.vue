@@ -25,6 +25,18 @@
             ></textarea>
             <p v-if="variablesError" class="bhh-modal-error">{{ variablesError }}</p>
           </div>
+          <div class="bhh-modal-section">
+            <label class="bhh-modal-label">Role Name (JWT dot-path)</label>
+            <input
+              class="bhh-modal-input"
+              v-model="localRoleNamePath"
+              placeholder="e.g. klik.x-hasura-default-role"
+            />
+            <p class="bhh-modal-hint">
+              Dot-notation path to extract from decoded JWT payload. Used as session name after
+              authentication.
+            </p>
+          </div>
         </div>
         <div class="bhh-modal-footer">
           <button class="bhh-modal-btn bhh-modal-btn-secondary" @click="$emit('close')">
@@ -50,15 +62,17 @@ const props = defineProps<{
   visible: boolean
   mutation: string
   variables: Record<string, any>
+  roleNamePath: string
 }>()
 
 const emit = defineEmits<{
   close: []
-  save: [mutation: string, variables: Record<string, any>]
+  save: [mutation: string, variables: Record<string, any>, roleNamePath: string]
 }>()
 
 const localMutation = ref(props.mutation)
 const localVariablesStr = ref(JSON.stringify(props.variables, null, 2))
+const localRoleNamePath = ref(props.roleNamePath)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 const variablesError = computed(() => {
@@ -76,6 +90,7 @@ watch(
     if (show) {
       localMutation.value = props.mutation
       localVariablesStr.value = JSON.stringify(props.variables, null, 2)
+      localRoleNamePath.value = props.roleNamePath
       nextTick(() => {
         textareaRef.value?.focus()
       })
@@ -86,9 +101,9 @@ watch(
 function handleSave() {
   try {
     const parsed = JSON.parse(localVariablesStr.value)
-    emit('save', localMutation.value, parsed)
+    emit('save', localMutation.value, parsed, localRoleNamePath.value)
   } catch {
-    emit('save', localMutation.value, props.variables)
+    emit('save', localMutation.value, props.variables, localRoleNamePath.value)
   }
   emit('close')
 }
@@ -187,6 +202,28 @@ function handleSave() {
 .bhh-modal-textarea:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.bhh-modal-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.bhh-modal-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.bhh-modal-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 2px 0 0;
 }
 
 .bhh-modal-error {

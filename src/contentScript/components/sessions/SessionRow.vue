@@ -82,6 +82,7 @@
       :visible="showModal"
       :mutation="session.mutation"
       :variables="session.variables"
+      :role-name-path="session.roleNamePath"
       @close="showModal = false"
       @save="handleSaveOperation"
     />
@@ -118,8 +119,12 @@ function handleDelete() {
   removeSession(props.session.id)
 }
 
-function handleSaveOperation(mutation: string, variables: Record<string, any>) {
-  updateSession(props.session.id, { mutation, variables })
+function handleSaveOperation(
+  mutation: string,
+  variables: Record<string, any>,
+  roleNamePath: string,
+) {
+  updateSession(props.session.id, { mutation, variables, roleNamePath })
 }
 
 function handleFieldInput(label: string, value: string) {

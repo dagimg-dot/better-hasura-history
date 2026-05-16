@@ -4,6 +4,7 @@ export interface Session {
   mutation: string
   variables: Record<string, any>
   optionLabel: string
+  roleNamePath: string
   status: 'idle' | 'authenticating' | 'success' | 'error'
   token?: string
   error?: string

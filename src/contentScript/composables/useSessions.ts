@@ -24,6 +24,7 @@ function createDefaultSession(): Session {
     mutation: DEFAULT_MUTATION,
     variables: JSON.parse(JSON.stringify(DEFAULT_VARIABLES)),
     optionLabel: 'Driver Login',
+    roleNamePath: '',
     status: 'idle',
   }
 }

@@ -69,6 +69,27 @@ function findTokenInResponse(data: Record<string, any>): string | null {
   return tokenPath(data)
 }
 
+export function decodeJWTPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = parts[1]
+    const padded = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const decoded = atob(padded)
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
+
+export function getValueByDotPath(obj: any, path: string): any {
+  if (!path) return undefined
+  return path.split('.').reduce((current, key) => {
+    if (current === null || current === undefined) return undefined
+    return current[key]
+  }, obj)
+}
+
 function setAuthHeaderInLS(token: string): void {
   const headers = readHeadersFromLS()
   const existing = headers.findIndex(

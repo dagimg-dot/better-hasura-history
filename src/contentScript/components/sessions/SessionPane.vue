@@ -28,10 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import { SessionAuthService } from '@/contentScript/services/SessionAuthService'
+import {
+  SessionAuthService,
+  decodeJWTPayload,
+  getValueByDotPath,
+} from '@/contentScript/services/SessionAuthService'
 import { useSessions } from '@/contentScript/composables/useSessions'
 import SessionRow from './SessionRow.vue'
 import { logger } from '@/contentScript/utils/logger'
+import type { Session } from '@/shared/types'
 
 const { sessions, addSession, updateSession, removeSession } = useSessions()
 
@@ -48,8 +53,22 @@ async function handleAuthenticate(sessionId: string) {
 
   try {
     const { token } = await SessionAuthService.authenticate(session.mutation, session.variables)
-    updateSession(sessionId, { status: 'success', token })
-    logger.info('SessionPane: authentication successful for', { name: session.name })
+    const updates: Record<string, any> = { status: 'success', token }
+
+    if (session.roleNamePath) {
+      const payload = decodeJWTPayload(token)
+      if (payload) {
+        const roleName = getValueByDotPath(payload, session.roleNamePath)
+        if (typeof roleName === 'string' && roleName.length > 0) {
+          updates.name = roleName
+        }
+      }
+    }
+
+    updateSession(sessionId, updates)
+    logger.info('SessionPane: authentication successful for', {
+      name: updates.name || session.name,
+    })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     logger.error(
