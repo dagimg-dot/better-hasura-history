@@ -70,13 +70,54 @@
     <div class="session-fields">
       <div v-for="label in fieldLabels" :key="label" class="session-field">
         <div class="session-field-label">{{ label }}</div>
-        <input
-          class="session-field-input"
-          :type="label.toLowerCase().includes('password') ? 'password' : 'text'"
-          :value="fieldValues[label] || ''"
-          :placeholder="label"
-          @input="handleFieldInput(label, ($event.target as HTMLInputElement).value)"
-        />
+        <div class="session-field-input-wrap">
+          <input
+            class="session-field-input"
+            :type="isPasswordField(label) && !isPasswordVisible(label) ? 'password' : 'text'"
+            :value="fieldValues[label] || ''"
+            :placeholder="label"
+            @input="handleFieldInput(label, ($event.target as HTMLInputElement).value)"
+          />
+          <button
+            v-if="isPasswordField(label)"
+            class="session-field-eye"
+            @click="togglePassword(label)"
+            :title="isPasswordVisible(label) ? 'Hide' : 'Show'"
+          >
+            <svg
+              v-if="isPasswordVisible(label)"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+              ></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
     <OperationModal
@@ -109,9 +150,28 @@ const { getFieldLabels, getFieldValues, setFieldValue, updateSession, removeSess
   useSessions()
 
 const showModal = ref(false)
+const visiblePasswords = ref<Set<string>>(new Set())
 
 const fieldLabels = computed(() => getFieldLabels(props.session))
 const fieldValues = computed(() => getFieldValues(props.session))
+
+function isPasswordField(label: string): boolean {
+  return label.toLowerCase().includes('password')
+}
+
+function isPasswordVisible(label: string): boolean {
+  return isPasswordField(label) && visiblePasswords.value.has(label)
+}
+
+function togglePassword(label: string) {
+  const next = new Set(visiblePasswords.value)
+  if (next.has(label)) {
+    next.delete(label)
+  } else {
+    next.add(label)
+  }
+  visiblePasswords.value = next
+}
 
 function handleCustomize() {
   showModal.value = true
@@ -309,6 +369,34 @@ function updateName(e: Event) {
 .session-field-input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+.session-field-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.session-field-input-wrap .session-field-input {
+  padding-right: 28px;
+}
+
+.session-field-eye {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.session-field-eye:hover {
+  color: #374151;
 }
 
 .session-error-msg {
