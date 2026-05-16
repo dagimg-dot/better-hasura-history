@@ -11,6 +11,11 @@
         </div>
       </span>
     </summary>
+    <div v-if="activeAuth" class="bhh-auth-status">
+      <span class="bhh-auth-label">Authorization:</span>
+      <span class="bhh-auth-bearer">Bearer {{ activeAuth.shortToken }}</span>
+      <span v-if="activeAuth.roleName" class="bhh-auth-role">| {{ activeAuth.roleName }}</span>
+    </div>
     <div class="mt-sm">
       <div v-if="sessions.length === 0" class="bhh-empty-state">
         No sessions configured. Click "+ New Session" to add one.
@@ -38,7 +43,30 @@ import SessionRow from './SessionRow.vue'
 import { logger } from '@/contentScript/utils/logger'
 import type { Session } from '@/shared/types'
 
+import { computed } from 'vue'
+
 const { sessions, addSession, updateSession, removeSession } = useSessions()
+
+const activeAuth = computed(() => {
+  const active = sessions.value.find((s) => s.status === 'success' && s.token)
+  if (!active?.token) return null
+
+  const shortToken =
+    active.token.length > 24
+      ? active.token.substring(0, 8) + '...' + active.token.slice(-6)
+      : active.token
+
+  let roleName = ''
+  if (active.roleNamePath) {
+    const payload = decodeJWTPayload(active.token)
+    if (payload) {
+      const val = getValueByDotPath(payload, active.roleNamePath)
+      if (typeof val === 'string') roleName = val
+    }
+  }
+
+  return { token: active.token, shortToken, roleName }
+})
 
 function handleAddSession() {
   addSession()
@@ -52,7 +80,11 @@ async function handleAuthenticate(sessionId: string) {
   updateSession(sessionId, { status: 'authenticating', error: undefined, token: undefined })
 
   try {
-    const { token } = await SessionAuthService.authenticate(session.mutation, session.variables)
+    const { token } = await SessionAuthService.authenticate(
+      session.mutation,
+      session.variables,
+      session.token || undefined,
+    )
     const updates: Record<string, any> = { status: 'success', token }
 
     if (session.roleNamePath) {
@@ -113,6 +145,32 @@ async function handleAuthenticate(sessionId: string) {
 
 .bhh-new-session-btn:hover {
   background: linear-gradient(#f0f0f0, #e0e0e0);
+}
+
+.bhh-auth-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 4px 20px;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  color: #059669;
+}
+
+.bhh-auth-label {
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bhh-auth-bearer {
+  color: #374151;
+}
+
+.bhh-auth-role {
+  color: #059669;
+  font-weight: 600;
 }
 
 .bhh-empty-state {
