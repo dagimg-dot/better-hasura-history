@@ -1,120 +1,125 @@
 <template>
   <div class="better-query-container">
-    <div class="better-query-title">Better Query</div>
-
-    <div class="better-query-row">
-      <div
-        class="better-query-input-wrap"
-        data-tooltip="Key value to search across all tracked tables"
-      >
-        <input
-          v-model="keyInput"
-          type="text"
-          placeholder="Search key..."
-          @focus="showKeyDropdown = true"
-          @blur="handleKeyBlur"
-          @keydown="handleKeyKeydown"
-          @keydown.enter="handleSearch"
-        />
-        <ul v-if="showKeyDropdown && filteredKeys.length > 0" class="better-query-dropdown">
-          <li
-            v-for="(item, idx) in filteredKeys"
-            :key="item"
-            :class="{ selected: idx === selectedKeyIdx }"
-            @mousedown.prevent="selectKey(item)"
-            @mouseenter="selectedKeyIdx = idx"
-          >
-            <span>{{ item }}</span>
-          </li>
-        </ul>
-      </div>
-      <div
-        class="better-query-input-wrap"
-        data-tooltip="Regex pattern to select which columns to search in"
-      >
-        <input
-          v-model="regexInput"
-          type="text"
-          placeholder="Column regex..."
-          @focus="showRegexDropdown = true"
-          @blur="handleRegexBlur"
-          @keydown="handleRegexKeydown"
-          @keydown.enter="handleSearch"
-        />
-        <ul v-if="showRegexDropdown && filteredRegexes.length > 0" class="better-query-dropdown">
-          <li
-            v-for="(item, idx) in filteredRegexes"
-            :key="item"
-            :class="{ selected: idx === selectedRegexIdx }"
-            @mousedown.prevent="selectRegex(item)"
-            @mouseenter="selectedRegexIdx = idx"
-          >
-            <span>{{ item }}</span>
-          </li>
-        </ul>
-      </div>
-      <span
-        class="better-query-select-wrap"
-        data-tooltip="How the key value is matched against column data"
-      >
-        <select v-model="searchMode">
-          <option v-for="opt in SEARCH_MODE_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
-      </span>
-      <button
-        class="better-query-search-btn"
-        :disabled="isSearching || !keyInput || !regexInput"
-        @click="handleSearch"
-      >
-        {{ isSearching ? 'Searching...' : 'Search' }}
-      </button>
-      <button
-        v-show="keyInput || regexInput || results.length > 0 || error"
-        class="better-query-clear-btn"
-        title="Clear inputs and results"
-        @click="handleClear"
-      >
-        ✕
-      </button>
+    <div class="better-query-header" @click="toggleCollapse" title="Toggle Better Query">
+      <span class="better-query-collapse-icon">{{ isExpanded ? '▼' : '▶' }}</span>
+      <span class="better-query-title">Better Query</span>
     </div>
 
-    <div v-if="error && !isSearching" class="better-query-error">{{ error }}</div>
-
-    <div v-if="results.length > 0" class="better-query-results">
-      <div class="better-query-results-summary">
-        Found {{ totalMatchCount }} match{{ totalMatchCount !== 1 ? 'es' : '' }} across
-        {{ groupedResults.length }} table{{ groupedResults.length !== 1 ? 's' : ''
-        }}<span v-if="isSearching"> (loading...)</span>
+    <div v-show="isExpanded" class="better-query-body">
+      <div class="better-query-row">
+        <div
+          class="better-query-input-wrap"
+          data-tooltip="Key value to search across all tracked tables"
+        >
+          <input
+            v-model="keyInput"
+            type="text"
+            placeholder="Search key..."
+            @focus="showKeyDropdown = true"
+            @blur="handleKeyBlur"
+            @keydown="handleKeyKeydown"
+            @keydown.enter="handleSearch"
+          />
+          <ul v-if="showKeyDropdown && filteredKeys.length > 0" class="better-query-dropdown">
+            <li
+              v-for="(item, idx) in filteredKeys"
+              :key="item"
+              :class="{ selected: idx === selectedKeyIdx }"
+              @mousedown.prevent="selectKey(item)"
+              @mouseenter="selectedKeyIdx = idx"
+            >
+              <span>{{ item }}</span>
+            </li>
+          </ul>
+        </div>
+        <div
+          class="better-query-input-wrap"
+          data-tooltip="Regex pattern to select which columns to search in"
+        >
+          <input
+            v-model="regexInput"
+            type="text"
+            placeholder="Column regex..."
+            @focus="showRegexDropdown = true"
+            @blur="handleRegexBlur"
+            @keydown="handleRegexKeydown"
+            @keydown.enter="handleSearch"
+          />
+          <ul v-if="showRegexDropdown && filteredRegexes.length > 0" class="better-query-dropdown">
+            <li
+              v-for="(item, idx) in filteredRegexes"
+              :key="item"
+              :class="{ selected: idx === selectedRegexIdx }"
+              @mousedown.prevent="selectRegex(item)"
+              @mouseenter="selectedRegexIdx = idx"
+            >
+              <span>{{ item }}</span>
+            </li>
+          </ul>
+        </div>
+        <span
+          class="better-query-select-wrap"
+          data-tooltip="How the key value is matched against column data"
+        >
+          <select v-model="searchMode">
+            <option v-for="opt in SEARCH_MODE_OPTIONS" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </span>
+        <button
+          class="better-query-search-btn"
+          :disabled="isSearching || !keyInput || !regexInput"
+          @click="handleSearch"
+        >
+          {{ isSearching ? 'Searching...' : 'Search' }}
+        </button>
+        <button
+          v-show="keyInput || regexInput || results.length > 0 || error"
+          class="better-query-clear-btn"
+          title="Clear inputs and results"
+          @click="handleClear"
+        >
+          ✕
+        </button>
       </div>
-      <div v-for="(group, idx) in groupedResults" :key="idx" class="better-query-table-group">
-        <div class="better-query-table-name">{{ group.tableDisplayName }}</div>
-        <div v-for="(result, ridx) in group.results" :key="ridx" class="better-query-result-row">
-          <span class="better-query-column">{{ result.column }}</span>
-          <span class="better-query-count"
-            >{{ result.matchCount }} match{{ result.matchCount !== 1 ? 'es' : '' }}</span
-          >
-          <button
-            class="better-query-browse-btn"
-            @click="navigateToTable(result)"
-            title="Browse table with filter"
-          >
-            Browse
-          </button>
+
+      <div v-if="error && !isSearching" class="better-query-error">{{ error }}</div>
+
+      <div v-if="results.length > 0" class="better-query-results">
+        <div class="better-query-results-summary">
+          Found {{ totalMatchCount }} match{{ totalMatchCount !== 1 ? 'es' : '' }} across
+          {{ groupedResults.length }} table{{ groupedResults.length !== 1 ? 's' : ''
+          }}<span v-if="isSearching"> (loading...)</span>
+        </div>
+        <div v-for="(group, idx) in groupedResults" :key="idx" class="better-query-table-group">
+          <div class="better-query-table-name">{{ group.tableDisplayName }}</div>
+          <div v-for="(result, ridx) in group.results" :key="ridx" class="better-query-result-row">
+            <span class="better-query-column">{{ result.column }}</span>
+            <span class="better-query-count"
+              >{{ result.matchCount }} match{{ result.matchCount !== 1 ? 'es' : '' }}</span
+            >
+            <button
+              class="better-query-browse-btn"
+              @click="navigateToTable(result)"
+              title="Browse table with filter"
+            >
+              Browse
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="isSearching" class="better-query-loading">
-      <i class="fa fa-spinner fa-spin"></i> Scanning tables...
-    </div>
+      <div v-if="isSearching" class="better-query-loading">
+        <i class="fa fa-spinner fa-spin"></i> Scanning tables...
+      </div>
 
-    <div
-      v-if="hasSearched && results.length === 0 && !isSearching && !error"
-      class="better-query-no-results"
-    >
-      No matches found
+      <div
+        v-if="hasSearched && results.length === 0 && !isSearching && !error"
+        class="better-query-no-results"
+      >
+        No matches found
+      </div>
     </div>
   </div>
 </template>
@@ -136,6 +141,7 @@ const MAX_RECENT = 10
 
 const recentKeys = useStorage<string[]>('better-hasura-recent-keys', [])
 const recentRegexes = useStorage<string[]>('better-hasura-recent-regexes', [])
+const isExpanded = useStorage('better-hasura-query-expanded', true)
 
 const keyInput = ref('')
 const regexInput = ref('')
@@ -266,11 +272,15 @@ function selectRegex(regex: string) {
 }
 
 function addToRecents(key: string, regex: string) {
-  const keys = recentKeys.value.filter((k) => k !== key)
+  const keys = recentKeys.value.filter(k => k !== key)
   recentKeys.value = [key, ...keys].slice(0, MAX_RECENT)
 
-  const regexes = recentRegexes.value.filter((r) => r !== regex)
+  const regexes = recentRegexes.value.filter(r => r !== regex)
   recentRegexes.value = [regex, ...regexes].slice(0, MAX_RECENT)
+}
+
+function toggleCollapse() {
+  isExpanded.value = !isExpanded.value
 }
 
 const totalMatchCount = computed(() => results.value.reduce((sum, r) => sum + r.matchCount, 0))
@@ -357,16 +367,32 @@ function handleClear() {
 
 <style scoped>
 .better-query-container {
-  padding: 8px 0 10px 0;
+  padding: 0 0 10px 0;
+}
+
+.better-query-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 0 4px 0;
 }
 
 .better-query-title {
   font-size: 20px;
   font-weight: 700;
   color: #555;
-  margin-top: 8px;
-  margin-bottom: 8px;
-  padding: 0 0 6px 0;
+}
+
+.better-query-collapse-icon {
+  font-size: 10px;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.better-query-header:hover .better-query-collapse-icon {
+  color: #555;
 }
 
 .better-query-row {
