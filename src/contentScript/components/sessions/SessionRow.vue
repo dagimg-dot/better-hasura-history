@@ -7,7 +7,22 @@
         @input="updateName"
         placeholder="Session name"
       />
-      <span v-if="active" class="session-active-badge">ACTIVE</span>
+      <button
+        v-if="session.token && active"
+        class="session-active-toggle session-active-on"
+        title="Deactivate this session"
+        @click="$emit('toggleActive', session.id)"
+      >
+        ACTIVE
+      </button>
+      <button
+        v-if="session.token && !active"
+        class="session-active-toggle session-active-off"
+        title="Activate this session"
+        @click="$emit('toggleActive', session.id)"
+      >
+        INACTIVE
+      </button>
       <div class="session-row-actions">
         <span v-if="session.status === 'authenticating'" class="session-status authenticating">
           <span class="spinner"></span> Authenticating...
@@ -144,6 +159,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   authenticate: [id: string]
+  toggleActive: [id: string]
 }>()
 
 const { getFieldLabels, getFieldValues, setFieldValue, updateSession, removeSession } =
@@ -234,15 +250,35 @@ function updateName(e: Event) {
   border-radius: 2px;
 }
 
-.session-active-badge {
+.session-active-on,
+.session-active-off {
   font-size: 10px;
   font-weight: 700;
-  color: #059669;
-  background: #ecfdf5;
   padding: 1px 6px;
   border-radius: 3px;
   letter-spacing: 0.04em;
   flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.session-active-on {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.session-active-off {
+  color: #9ca3af;
+  background: #f3f4f6;
+}
+
+.session-active-on:hover {
+  background: #d1fae5;
+}
+
+.session-active-off:hover {
+  background: #e5e7eb;
 }
 
 .session-row-actions {

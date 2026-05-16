@@ -27,6 +27,7 @@
           :session="session"
           :active="session.id === activeSessionId"
           @authenticate="handleAuthenticate"
+          @toggle-active="handleToggleActive"
         />
       </div>
     </div>
@@ -48,6 +49,42 @@ import { ref, watch } from 'vue'
 import { EXTENSION_CONFIG } from '@/shared/constants'
 
 const { sessions, addSession, updateSession, removeSession } = useSessions()
+
+const DEFAULT_ROLE_NAME_PATH = 'klik.x-hasura-default-role'
+
+function extractRoleName(token: string, roleNamePath: string | undefined): string {
+  try {
+    const path = roleNamePath || DEFAULT_ROLE_NAME_PATH
+    if (!path) return ''
+
+    const payload = decodeJWTPayload(token)
+    if (!payload) {
+      logger.warn('SessionPane: failed to decode JWT payload')
+      return ''
+    }
+
+    const val = getValueByDotPath(payload, path)
+    if (typeof val === 'string' && val.length > 0) return val
+
+    if (roleNamePath) {
+      // Custom path was set but didn't resolve — warn the user
+      logger.warn('SessionPane: roleNamePath not found in JWT', { path })
+    } else {
+      // Default path didn't resolve — the JWT structure might differ
+      logger.warn(
+        'SessionPane: default roleNamePath not found in JWT, the JWT may not have klik.x-hasura-default-role',
+        { path },
+      )
+    }
+    return ''
+  } catch (error) {
+    logger.error(
+      'SessionPane: error extracting role name',
+      error instanceof Error ? error : new Error(String(error)),
+    )
+    return ''
+  }
+}
 
 function findActiveSession() {
   try {
@@ -77,14 +114,7 @@ function buildAuthDisplay(
       ? session.token.substring(0, 8) + '...' + session.token.slice(-6)
       : session.token
 
-  let roleName = ''
-  if (session.roleNamePath) {
-    const payload = decodeJWTPayload(session.token)
-    if (payload) {
-      const val = getValueByDotPath(payload, session.roleNamePath)
-      if (typeof val === 'string') roleName = val
-    }
-  }
+  const roleName = extractRoleName(session.token, session.roleNamePath)
 
   return { token: session.token, shortToken, roleName }
 }
@@ -116,14 +146,9 @@ async function handleAuthenticate(sessionId: string) {
     const { token } = await SessionAuthService.authenticate(session.mutation, session.variables)
     const updates: Record<string, any> = { status: 'success', token }
 
-    if (session.roleNamePath) {
-      const payload = decodeJWTPayload(token)
-      if (payload) {
-        const roleName = getValueByDotPath(payload, session.roleNamePath)
-        if (typeof roleName === 'string' && roleName.length > 0) {
-          updates.name = roleName
-        }
-      }
+    const roleName = extractRoleName(token, session.roleNamePath)
+    if (roleName) {
+      updates.name = roleName
     }
 
     updateSession(sessionId, updates)
@@ -138,6 +163,58 @@ async function handleAuthenticate(sessionId: string) {
       error instanceof Error ? error : new Error(msg),
     )
     updateSession(sessionId, { status: 'error', error: msg })
+  }
+}
+
+function handleToggleActive(sessionId: string) {
+  try {
+    const session = sessions.value.find((s) => s.id === sessionId)
+    if (!session?.token) return
+
+    const raw = localStorage.getItem(EXTENSION_CONFIG.STORAGE_KEYS.GRAPHQL_HEADERS)
+    if (!raw) return
+    const headers = JSON.parse(raw) as Array<{
+      key: string
+      value: string
+      isActive: boolean
+      isNewHeader: boolean
+      isDisabled?: boolean
+    }>
+    const authIdx = headers.findIndex(
+      (h) => h.key.toLowerCase() === 'authorization' && !h.isNewHeader,
+    )
+    if (authIdx < 0) return
+
+    const wasActive = headers[authIdx].isActive
+    const currentBearer = headers[authIdx].value
+    const currentToken = currentBearer.replace(/^Bearer\s+/i, '')
+
+    if (wasActive && currentToken === session.token) {
+      // Toggle OFF: deactivate but keep the value
+      headers[authIdx] = { ...headers[authIdx], isActive: false }
+      localStorage.setItem(EXTENSION_CONFIG.STORAGE_KEYS.GRAPHQL_HEADERS, JSON.stringify(headers))
+      window.postMessage({ type: 'BHH_REFRESH_HEADERS' }, '*')
+    } else {
+      // Toggle ON: set value to this session's token and activate
+      headers[authIdx] = {
+        ...headers[authIdx],
+        value: `Bearer ${session.token}`,
+        isActive: true,
+      }
+      localStorage.setItem(EXTENSION_CONFIG.STORAGE_KEYS.GRAPHQL_HEADERS, JSON.stringify(headers))
+      window.postMessage({ type: 'BHH_REFRESH_HEADERS', data: { token: session.token } }, '*')
+    }
+
+    syncActiveSession()
+    logger.info('SessionPane: toggled session', {
+      sessionId,
+      toActive: !wasActive || currentToken !== session.token,
+    })
+  } catch (error) {
+    logger.error(
+      'SessionPane: failed to toggle session',
+      error instanceof Error ? error : new Error(String(error)),
+    )
   }
 }
 </script>

@@ -211,20 +211,20 @@ window.addEventListener(
     }
 
     if (type === MESSAGE_TYPES.REFRESH_HEADERS) {
-      var _token = data && data.token
-      var _authCheckboxes = document.querySelectorAll('input[data-element-name="isActive"]')
-      for (var _rhi = 0; _rhi < _authCheckboxes.length; _rhi++) {
-        var _rhCb = _authCheckboxes[_rhi]
+      var _rhToken = data && data.token
+      var _rhCheckboxes = document.querySelectorAll('input[data-element-name="isActive"]')
+      for (var _rhi = 0; _rhi < _rhCheckboxes.length; _rhi++) {
+        var _rhCb = _rhCheckboxes[_rhi]
         var _rhRow = _rhCb.closest('tr')
         if (!_rhRow) continue
         var _rhKeyInput = _rhRow.querySelector('input[data-element-name="key"]')
         if (_rhKeyInput && _rhKeyInput.value.toLowerCase() === 'authorization') {
-          var _rhEventKey = Object.keys(_authCheckboxes[_rhi]).find(function (k) {
+          var _rhEventKey = Object.keys(_rhCb).find(function (k) {
             return k.indexOf('__reactEventHandlers') >= 0
           })
           if (!_rhEventKey) break
 
-          if (_token) {
+          if (_rhToken) {
             var _rhValInput = _rhRow.querySelector('input[data-element-name="value"]')
             if (_rhValInput) {
               var _valHandlers = _rhValInput[_rhEventKey]
@@ -234,7 +234,7 @@ window.addEventListener(
                     getAttribute: function (a) {
                       return _rhValInput.getAttribute(a)
                     },
-                    value: 'Bearer ' + _token,
+                    value: 'Bearer ' + _rhToken,
                   },
                   currentTarget: _rhValInput,
                   preventDefault: function () {},
@@ -242,22 +242,38 @@ window.addEventListener(
                 })
               }
             }
-          }
 
-          var _cbHandlers = _rhCb[_rhEventKey]
-          if (_cbHandlers && _cbHandlers.onChange && !_rhCb.checked) {
-            _cbHandlers.onChange({
-              target: {
-                getAttribute: function (a) {
-                  return _rhCb.getAttribute(a)
+            var _cbHandlers = _rhCb[_rhEventKey]
+            if (_cbHandlers && _cbHandlers.onChange && !_rhCb.checked) {
+              _cbHandlers.onChange({
+                target: {
+                  getAttribute: function (a) {
+                    return _rhCb.getAttribute(a)
+                  },
+                  value: 'on',
+                  checked: true,
                 },
-                value: 'on',
-                checked: true,
-              },
-              currentTarget: _rhCb,
-              preventDefault: function () {},
-              stopPropagation: function () {},
-            })
+                currentTarget: _rhCb,
+                preventDefault: function () {},
+                stopPropagation: function () {},
+              })
+            }
+          } else {
+            var _cbHandlers = _rhCb[_rhEventKey]
+            if (_cbHandlers && _cbHandlers.onChange) {
+              _cbHandlers.onChange({
+                target: {
+                  getAttribute: function (a) {
+                    return _rhCb.getAttribute(a)
+                  },
+                  value: 'on',
+                  checked: !_rhCb.checked,
+                },
+                currentTarget: _rhCb,
+                preventDefault: function () {},
+                stopPropagation: function () {},
+              })
+            }
           }
           break
         }
