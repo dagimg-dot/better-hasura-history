@@ -1,3 +1,4 @@
+import { type App } from 'vue'
 import { DOMManager, HistoryService, VueAppManager } from './services'
 import { logger } from './utils/logger'
 import { createPageStrategy, type PageStrategy, type ParsedContent } from './strategies'
@@ -9,6 +10,8 @@ export class BetterHasuraHistory {
   private vueAppManager = new VueAppManager()
   private originalHistoryButton: HTMLElement | null = null
   private resizeObserver: ResizeObserver | null = null
+  private betterQueryApp: App | null = null
+  private betterQueryContainer: HTMLElement | null = null
   private isInitialized = false
 
   constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: PageType) {
@@ -68,6 +71,24 @@ export class BetterHasuraHistory {
 
     this.vueAppManager.initializeApps(buttonContainer, paneContainer)
 
+    if (this.strategy.pageType === 'sql') {
+      try {
+        const runButton = document.querySelector('[data-test="run-sql"]')
+        if (runButton) {
+          const container = document.createElement('div')
+          runButton.insertAdjacentElement('afterend', container)
+          const { createApp } = await import('vue')
+          const { BetterQuery } = await import('./components/query')
+          this.betterQueryApp = createApp(BetterQuery)
+          this.betterQueryContainer = container
+          this.betterQueryApp.mount(container)
+          logger.debug('BetterQuery mounted')
+        }
+      } catch (error) {
+        logger.error('Failed to inject BetterQuery', error as Error)
+      }
+    }
+
     if (this.strategy.shouldToggleOriginalHistory()) {
       const prettifyBtn = this.domManager.createPrettifyButton()
       prettifyBtn?.addEventListener('click', (e) => {
@@ -86,6 +107,15 @@ export class BetterHasuraHistory {
 
     this.vueAppManager.cleanup()
     this.domManager.cleanup()
+
+    if (this.betterQueryApp) {
+      this.betterQueryApp.unmount()
+      this.betterQueryApp = null
+    }
+    if (this.betterQueryContainer) {
+      this.betterQueryContainer.remove()
+      this.betterQueryContainer = null
+    }
 
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
