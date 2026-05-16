@@ -16,6 +16,8 @@ export interface EntryInput {
 }
 
 export class HistoryService {
+  static useRootFieldAsFallbackName = false
+
   static addEntry(input: EntryInput): HistoryItem | null {
     try {
       if (this.isDuplicate(input.query, input.variables, input.operationType)) {
@@ -23,7 +25,16 @@ export class HistoryService {
         return null
       }
 
-      const uniqueName = this.generateUniqueName(input.operationName)
+      let name = input.operationName
+      if (
+        (!name || name.startsWith('Unnamed')) &&
+        this.useRootFieldAsFallbackName &&
+        input.operationType !== 'sql'
+      ) {
+        name = this.extractRootField(input.query) || 'Unnamed'
+      }
+
+      const uniqueName = this.generateUniqueName(name)
 
       const entry: HistoryItem = {
         id: crypto.randomUUID(),
@@ -87,5 +98,33 @@ export class HistoryService {
       suffix++
     }
     return `${baseName}_${suffix}`
+  }
+
+  private static extractRootField(query: string): string | null {
+    const trimmed = query.trim()
+    if (!trimmed) return null
+    const withoutPreamble = trimmed.replace(
+      /^\s*(?:query|mutation|subscription)\s+(?:\w+\s*)?(?:\([^)]*\)\s*)?/,
+      '',
+    )
+    const withoutDirectives = withoutPreamble.replace(/@\w+(?:\s*\([^)]*\))?\s*/g, '')
+    const rootMatch = withoutDirectives.match(/^\s*\{?\s*(\w+)/)
+    return rootMatch ? rootMatch[1] : null
+  }
+
+  static recomputeUnnamedEntries(): number {
+    let count = 0
+    const unnamed = historyItems.value.filter(
+      (item) => !item.operationName || item.operationName.startsWith('Unnamed'),
+    )
+    for (const item of unnamed) {
+      const rootField = this.extractRootField(item.query)
+      if (rootField) {
+        const newName = this.generateUniqueName(rootField)
+        updateHistoryItem(item.id, { operationName: newName })
+        count++
+      }
+    }
+    return count
   }
 }

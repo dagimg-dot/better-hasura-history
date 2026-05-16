@@ -12,6 +12,7 @@ export interface HostConfig {
 export interface Settings {
   extensionEnabled: boolean
   showOriginalHistory: boolean
+  useRootFieldAsFallbackName: boolean
   logLevel: LogLevel
   adminSecret: string
   graphqlEndpoint: string
@@ -32,6 +33,7 @@ export class SettingsManager {
   private static readonly DEFAULT_SETTINGS: Settings = {
     extensionEnabled: true,
     showOriginalHistory: false,
+    useRootFieldAsFallbackName: false,
     logLevel: 'info',
     adminSecret: '',
     graphqlEndpoint: '',

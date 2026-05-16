@@ -1,4 +1,5 @@
 import BetterHasuraHistory from '@/contentScript/main'
+import { HistoryService } from '@/contentScript/services/HistoryService'
 import { logger } from '@/contentScript/utils/logger'
 import { waitForElement } from '@/contentScript/utils/waitForElement'
 import { SettingsManager, type Settings } from './SettingsManager'
@@ -27,6 +28,7 @@ export class ExtensionLifecycleManager {
       await this.bhhInstance.init({
         showOriginalHistory: finalSettings.showOriginalHistory,
       })
+      HistoryService.useRootFieldAsFallbackName = finalSettings.useRootFieldAsFallbackName === true
 
       this.isInitialized = true
       logger.info('Extension initialized successfully')
@@ -81,6 +83,16 @@ export class ExtensionLifecycleManager {
 
     if (mergedOld.logLevel !== mergedNew.logLevel) {
       logger.setLogLevel(mergedNew.logLevel)
+    }
+
+    if (mergedOld.useRootFieldAsFallbackName !== mergedNew.useRootFieldAsFallbackName) {
+      HistoryService.useRootFieldAsFallbackName = mergedNew.useRootFieldAsFallbackName === true
+      if (mergedNew.useRootFieldAsFallbackName === true) {
+        const count = HistoryService.recomputeUnnamedEntries()
+        if (count > 0) {
+          logger.info(`Recomputed ${count} unnamed entries with root field names`)
+        }
+      }
     }
 
     if (mergedOld.extensionEnabled !== mergedNew.extensionEnabled) {

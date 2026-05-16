@@ -5,6 +5,7 @@ import type { HostConfig, Settings } from '@/contentScript/services/SettingsMana
 const settings = ref<Settings>({
   extensionEnabled: true,
   showOriginalHistory: false,
+  useRootFieldAsFallbackName: false,
   logLevel: 'info',
   adminSecret: '',
   graphqlEndpoint: '',
@@ -102,6 +103,19 @@ watch(
           />
           <span class="slider round"></span>
         </label>
+      </div>
+      <div class="setting setting-with-desc">
+        <label for="use-root-field">Root field name as fallback</label>
+        <label class="switch">
+          <input
+            type="checkbox"
+            id="use-root-field"
+            v-model="settings.useRootFieldAsFallbackName"
+            :disabled="!settings.extensionEnabled"
+          />
+          <span class="slider round"></span>
+        </label>
+        <p class="description">Use root field as fallback name when operation is unnamed</p>
       </div>
 
       <div class="setting-col">
@@ -269,6 +283,15 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.setting-with-desc {
+  flex-wrap: wrap;
+}
+
+.setting-with-desc .description {
+  flex: 0 0 100%;
+  margin-top: 2px;
 }
 
 .setting label {
