@@ -29,16 +29,7 @@ function readHeadersFromLS(): HeaderEntry[] {
 }
 
 function writeHeadersToLS(headers: HeaderEntry[]): void {
-  const serialized = JSON.stringify(headers)
-  localStorage.setItem(HEADERS_LS_KEY, serialized)
-
-  window.dispatchEvent(
-    new StorageEvent('storage', {
-      key: HEADERS_LS_KEY,
-      newValue: serialized,
-      storageArea: localStorage,
-    }),
-  )
+  localStorage.setItem(HEADERS_LS_KEY, JSON.stringify(headers))
 }
 
 function buildRequestHeaders(headers: HeaderEntry[]): Record<string, string> {
@@ -99,25 +90,6 @@ export function getValueByDotPath(obj: any, path: string): any {
   }, obj)
 }
 
-function toggleAuthCheckboxInDOM(): void {
-  const checkboxes = document.querySelectorAll('input[data-element-name="isActive"]')
-  for (let i = 0; i < checkboxes.length; i++) {
-    const checkbox = checkboxes[i] as HTMLInputElement | null
-    if (!checkbox) continue
-    const row = checkbox.closest('tr')
-    if (!row) continue
-    const keyInput = row.querySelector(
-      'input[type="text"], input:not([type="checkbox"])',
-    ) as HTMLInputElement | null
-    if (keyInput && keyInput.value.toLowerCase() === 'authorization') {
-      if (!checkbox.checked) {
-        checkbox.click()
-      }
-      break
-    }
-  }
-}
-
 function setAuthHeaderInLS(token: string): void {
   const headers = readHeadersFromLS()
   const existing = headers.findIndex(
@@ -144,7 +116,7 @@ function setAuthHeaderInLS(token: string): void {
   }
 
   writeHeadersToLS(headers)
-  toggleAuthCheckboxInDOM()
+  window.postMessage({ type: 'BHH_REFRESH_HEADERS' }, '*')
 }
 
 export const SessionAuthService = {

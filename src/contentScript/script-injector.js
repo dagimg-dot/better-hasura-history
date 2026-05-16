@@ -20,6 +20,7 @@ const MESSAGE_TYPES = {
   EXPORT_REQUEST: 'BHH_EXPORT_HISTORY_REQUEST',
   REFRESH_SCHEMA: 'BHH_REFRESH_SCHEMA',
   SCHEMA_REFRESHED: 'BHH_SCHEMA_REFRESHED',
+  REFRESH_HEADERS: 'BHH_REFRESH_HEADERS',
 }
 
 function getCodeMirrorEditor(selector) {
@@ -207,6 +208,22 @@ window.addEventListener(
 
     if (type === MESSAGE_TYPES.REFRESH_SCHEMA) {
       refreshSchema()
+    }
+
+    if (type === MESSAGE_TYPES.REFRESH_HEADERS) {
+      var _bhhCheckboxes = document.querySelectorAll('input[data-element-name="isActive"]')
+      for (var _bhhI = 0; _bhhI < _bhhCheckboxes.length; _bhhI++) {
+        var _bhhCb = _bhhCheckboxes[_bhhI]
+        var _bhhRow = _bhhCb.closest('tr')
+        if (!_bhhRow) continue
+        var _bhhKeyInput = _bhhRow.querySelector('input[type="text"]')
+        if (_bhhKeyInput && _bhhKeyInput.value.toLowerCase() === 'authorization') {
+          if (!_bhhCb.checked) {
+            _bhhCb.click()
+          }
+          break
+        }
+      }
     }
 
     if (type === MESSAGE_TYPES.GET_EDITOR_CONTENT) {
