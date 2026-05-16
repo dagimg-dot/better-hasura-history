@@ -116,7 +116,7 @@ function setAuthHeaderInLS(token: string): void {
   }
 
   writeHeadersToLS(headers)
-  window.postMessage({ type: 'BHH_REFRESH_HEADERS' }, '*')
+  window.postMessage({ type: 'BHH_REFRESH_HEADERS', data: { token } }, '*')
 }
 
 export const SessionAuthService = {

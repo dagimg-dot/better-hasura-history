@@ -211,15 +211,53 @@ window.addEventListener(
     }
 
     if (type === MESSAGE_TYPES.REFRESH_HEADERS) {
-      var _bhhCheckboxes = document.querySelectorAll('input[data-element-name="isActive"]')
-      for (var _bhhI = 0; _bhhI < _bhhCheckboxes.length; _bhhI++) {
-        var _bhhCb = _bhhCheckboxes[_bhhI]
-        var _bhhRow = _bhhCb.closest('tr')
-        if (!_bhhRow) continue
-        var _bhhKeyInput = _bhhRow.querySelector('input[type="text"]')
-        if (_bhhKeyInput && _bhhKeyInput.value.toLowerCase() === 'authorization') {
-          if (!_bhhCb.checked) {
-            _bhhCb.click()
+      var _token = data && data.token
+      var _authCheckboxes = document.querySelectorAll('input[data-element-name="isActive"]')
+      for (var _rhi = 0; _rhi < _authCheckboxes.length; _rhi++) {
+        var _rhCb = _authCheckboxes[_rhi]
+        var _rhRow = _rhCb.closest('tr')
+        if (!_rhRow) continue
+        var _rhKeyInput = _rhRow.querySelector('input[data-element-name="key"]')
+        if (_rhKeyInput && _rhKeyInput.value.toLowerCase() === 'authorization') {
+          var _rhEventKey = Object.keys(_authCheckboxes[_rhi]).find(function (k) {
+            return k.indexOf('__reactEventHandlers') >= 0
+          })
+          if (!_rhEventKey) break
+
+          if (_token) {
+            var _rhValInput = _rhRow.querySelector('input[data-element-name="value"]')
+            if (_rhValInput) {
+              var _valHandlers = _rhValInput[_rhEventKey]
+              if (_valHandlers && _valHandlers.onChange) {
+                _valHandlers.onChange({
+                  target: {
+                    getAttribute: function (a) {
+                      return _rhValInput.getAttribute(a)
+                    },
+                    value: 'Bearer ' + _token,
+                  },
+                  currentTarget: _rhValInput,
+                  preventDefault: function () {},
+                  stopPropagation: function () {},
+                })
+              }
+            }
+          }
+
+          var _cbHandlers = _rhCb[_rhEventKey]
+          if (_cbHandlers && _cbHandlers.onChange && !_rhCb.checked) {
+            _cbHandlers.onChange({
+              target: {
+                getAttribute: function (a) {
+                  return _rhCb.getAttribute(a)
+                },
+                value: 'on',
+                checked: true,
+              },
+              currentTarget: _rhCb,
+              preventDefault: function () {},
+              stopPropagation: function () {},
+            })
           }
           break
         }
