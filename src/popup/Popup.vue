@@ -161,6 +161,26 @@ watch(
           />
           <p class="description">Per-host admin secret for {{ currentHost }}</p>
         </div>
+
+        <div class="setting-col">
+          <label :for="'host-source-' + currentHost">Database Source</label>
+          <input
+            :id="'host-source-' + currentHost"
+            type="text"
+            class="text-input"
+            placeholder="default"
+            :value="currentHostConfig.source ?? ''"
+            @input="
+              currentHostConfig = {
+                ...currentHostConfig,
+                source: ($event.target as HTMLInputElement).value,
+              }
+            "
+          />
+          <p class="description">
+            Source name for fast Postgres queries (auto-discovered on first metadata fetch)
+          </p>
+        </div>
       </template>
 
       <!-- Global fallback credentials -->

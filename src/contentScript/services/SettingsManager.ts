@@ -5,6 +5,7 @@ import { logger } from '@/shared/logging'
 export interface HostConfig {
   adminSecret: string
   graphqlEndpoint: string
+  source?: string
 }
 
 export interface Settings {
