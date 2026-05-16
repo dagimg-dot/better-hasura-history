@@ -44,7 +44,7 @@ import SessionRow from './SessionRow.vue'
 import { logger } from '@/contentScript/utils/logger'
 import type { Session } from '@/shared/types'
 
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { EXTENSION_CONFIG } from '@/shared/constants'
 
 const { sessions, addSession, updateSession, removeSession } = useSessions()
@@ -67,35 +67,39 @@ function findActiveSession() {
   }
 }
 
-const activeSessionId = ref<string | null>(null)
-watch(
-  sessions,
-  () => {
-    activeSessionId.value = findActiveSession()?.id ?? null
-  },
-  { immediate: true },
-)
-
-const activeAuth = computed(() => {
-  const active = findActiveSession()
-  if (!active?.token) return null
+function buildAuthDisplay(
+  session: NonNullable<ReturnType<typeof findActiveSession>>,
+): { token: string; shortToken: string; roleName: string } | null {
+  if (!session.token) return null
 
   const shortToken =
-    active.token.length > 24
-      ? active.token.substring(0, 8) + '...' + active.token.slice(-6)
-      : active.token
+    session.token.length > 24
+      ? session.token.substring(0, 8) + '...' + session.token.slice(-6)
+      : session.token
 
   let roleName = ''
-  if (active.roleNamePath) {
-    const payload = decodeJWTPayload(active.token)
+  if (session.roleNamePath) {
+    const payload = decodeJWTPayload(session.token)
     if (payload) {
-      const val = getValueByDotPath(payload, active.roleNamePath)
+      const val = getValueByDotPath(payload, session.roleNamePath)
       if (typeof val === 'string') roleName = val
     }
   }
 
-  return { token: active.token, shortToken, roleName }
-})
+  return { token: session.token, shortToken, roleName }
+}
+
+function syncActiveSession() {
+  const active = findActiveSession()
+  activeSessionId.value = active?.id ?? null
+  activeAuth.value = active ? buildAuthDisplay(active) : null
+}
+
+const activeSessionId = ref<string | null>(null)
+const activeAuth = ref<{ token: string; shortToken: string; roleName: string } | null>(null)
+
+syncActiveSession()
+watch(sessions, syncActiveSession)
 
 function handleAddSession() {
   addSession()
@@ -123,7 +127,7 @@ async function handleAuthenticate(sessionId: string) {
     }
 
     updateSession(sessionId, updates)
-    activeSessionId.value = findActiveSession()?.id ?? null
+    syncActiveSession()
     logger.info('SessionPane: authentication successful for', {
       name: updates.name || session.name,
     })
