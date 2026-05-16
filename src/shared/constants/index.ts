@@ -4,6 +4,8 @@ export const EXTENSION_CONFIG = {
   STORAGE_KEYS: {
     HISTORY: 'bhh_history',
     SETTINGS: 'bhh_settings',
+    SESSIONS: 'bhh_sessions',
+    GRAPHQL_HEADERS: 'apiExplorer:graphiqlHeaders',
   },
   DOM_SELECTORS: {
     GRAPHIQL_CONTAINER: '.graphiql-container',

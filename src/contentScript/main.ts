@@ -12,6 +12,8 @@ export class BetterHasuraHistory {
   private resizeObserver: ResizeObserver | null = null
   private betterQueryApp: App | null = null
   private betterQueryContainer: HTMLElement | null = null
+  private sessionPaneApp: App | null = null
+  private sessionPaneContainer: HTMLElement | null = null
   private isInitialized = false
 
   constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: PageType) {
@@ -89,6 +91,15 @@ export class BetterHasuraHistory {
       }
     }
 
+    if (this.strategy.pageType === 'graphiql') {
+      this.injectSessionPane().catch((err) => {
+        logger.error(
+          'Failed to inject SessionPane',
+          err instanceof Error ? err : new Error(String(err)),
+        )
+      })
+    }
+
     if (this.strategy.shouldToggleOriginalHistory()) {
       const prettifyBtn = this.domManager.createPrettifyButton()
       prettifyBtn?.addEventListener('click', (e) => {
@@ -117,6 +128,8 @@ export class BetterHasuraHistory {
       this.betterQueryContainer = null
     }
 
+    this.removeSessionPane()
+
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
@@ -129,6 +142,43 @@ export class BetterHasuraHistory {
     }
 
     this.isInitialized = false
+  }
+
+  private async injectSessionPane(): Promise<void> {
+    const apiBlock = document.getElementById('apiRequestBlock')
+    if (!apiBlock) {
+      logger.debug('SessionPane: #apiRequestBlock not found')
+      return
+    }
+
+    const lastDetails = apiBlock.querySelector('details:last-of-type')
+    if (!lastDetails) {
+      logger.debug('SessionPane: no <details> found in #apiRequestBlock')
+      return
+    }
+
+    const container = document.createElement('div')
+    container.id = 'better-session-container'
+    container.setAttribute('data-v-app', '')
+    lastDetails.insertAdjacentElement('afterend', container)
+
+    const { createApp } = await import('vue')
+    const { SessionPane } = await import('./components/sessions')
+    this.sessionPaneApp = createApp(SessionPane)
+    this.sessionPaneContainer = container
+    this.sessionPaneApp.mount(container)
+    logger.debug('SessionPane mounted')
+  }
+
+  private removeSessionPane(): void {
+    if (this.sessionPaneApp) {
+      this.sessionPaneApp.unmount()
+      this.sessionPaneApp = null
+    }
+    if (this.sessionPaneContainer) {
+      this.sessionPaneContainer.remove()
+      this.sessionPaneContainer = null
+    }
   }
 
   toggleOriginalHistory(visible: boolean): void {
