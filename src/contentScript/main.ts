@@ -12,7 +12,6 @@ export class BetterHasuraHistory {
   private resizeObserver: ResizeObserver | null = null
   private betterQueryApp: App | null = null
   private betterQueryContainer: HTMLElement | null = null
-  private refreshSchemaBtn: HTMLElement | null = null
   private isInitialized = false
 
   constructor(elements: { buttonContainer: Element; paneContainer: Element }, pageType: PageType) {
@@ -72,30 +71,6 @@ export class BetterHasuraHistory {
 
     this.vueAppManager.initializeApps(buttonContainer, paneContainer)
 
-    if (this.strategy.pageType === 'graphiql') {
-      const refreshBtn = document.createElement('button')
-      refreshBtn.id = 'bhh-refresh-schema-btn'
-      refreshBtn.textContent = 'Refresh Schema'
-      refreshBtn.title = 'Re-fetch GraphQL schema from the server'
-      refreshBtn.style.cssText =
-        'background:none;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;margin:0 5px;padding:3px 8px;color:#555;'
-      refreshBtn.addEventListener('click', () => {
-        refreshBtn.textContent = 'Refreshing...'
-        window.postMessage({ type: 'BHH_REFRESH_SCHEMA' }, '*')
-      })
-      window.addEventListener('message', (e) => {
-        if (e.source !== window) return
-        if (e.data.type === 'BHH_SCHEMA_REFRESHED') {
-          refreshBtn.textContent = e.data.success ? 'Refresh Schema' : 'Failed'
-          setTimeout(() => {
-            refreshBtn.textContent = 'Refresh Schema'
-          }, 2000)
-        }
-      })
-      buttonContainer.insertAdjacentElement('afterend', refreshBtn)
-      this.refreshSchemaBtn = refreshBtn
-    }
-
     if (this.strategy.pageType === 'sql') {
       try {
         const runButton = document.querySelector('[data-test="run-sql"]')
@@ -146,9 +121,6 @@ export class BetterHasuraHistory {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
     }
-
-    this.refreshSchemaBtn?.remove()
-    this.refreshSchemaBtn = null
 
     window.removeEventListener('message', this.handleMessage)
 

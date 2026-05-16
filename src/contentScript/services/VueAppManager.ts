@@ -1,5 +1,5 @@
 import { type App, createApp } from 'vue'
-import { BetterHistoryBtn } from '@/contentScript/components/controls'
+import { ToolbarButtons } from '@/contentScript/components/controls'
 import { HistoryPane } from '@/contentScript/components/history'
 import { VueAppError } from '@/shared/errors'
 import { logger } from '@/contentScript/utils/logger'
@@ -28,7 +28,7 @@ export class VueAppManager implements IVueAppManager {
 
   private createButtonApp(container: HTMLElement): void {
     try {
-      this.buttonApp = createApp(BetterHistoryBtn)
+      this.buttonApp = createApp(ToolbarButtons)
       this.buttonApp.config.errorHandler = (err, instance, info) => {
         logger.error('Button app error:', err as Error, { info })
       }
