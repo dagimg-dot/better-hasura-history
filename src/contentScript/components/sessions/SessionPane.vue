@@ -1,10 +1,10 @@
 <template>
   <details open class="bhh-session-details">
-    <summary class="cursor-pointer inline-block items-center">
+    <summary class="cursor-pointer items-center bhh-summary">
       <span class="inline-block text-xs mr-sm">
         <i class="fa fa-chevron-right bhh-chevron"></i>
       </span>
-      <span class="inline-block">
+      <span class="bhh-summary-content">
         <div class="font-semibold" style="display: flex; align-items: center; gap: 8px">
           <span>Better Session</span>
           <button class="bhh-new-session-btn" @click.stop="handleAddSession">+ New Session</button>
@@ -234,10 +234,19 @@ function handleToggleActive(sessionId: string) {
 }
 
 .bhh-session-details summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 0;
 }
 
+.bhh-summary-content {
+  flex: 1;
+  min-width: 0;
+}
+
 .bhh-new-session-btn {
+  margin-left: auto;
   font-size: 12px;
   padding: 1px 8px;
   border: 1px solid #d1d5db;
