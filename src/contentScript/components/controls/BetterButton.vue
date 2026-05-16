@@ -33,7 +33,6 @@ const defaultStyles: Record<string, string> = {
   whiteSpace: 'nowrap',
   maxWidth: '150px',
   fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  fontSize: '12px',
   fontWeight: '400',
 }
 
