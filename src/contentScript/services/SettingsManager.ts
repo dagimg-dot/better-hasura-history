@@ -2,7 +2,7 @@ import type { LogLevel } from '@/shared/logging/Logger'
 import { StorageError } from '@/shared/errors'
 import { logger } from '@/shared/logging'
 
-interface Settings {
+export interface Settings {
   extensionEnabled: boolean
   showOriginalHistory: boolean
   logLevel: LogLevel

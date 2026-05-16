@@ -8,6 +8,7 @@ import {
 } from './services'
 import { logger } from './utils/logger'
 import type { PageType } from '@/shared/types/services'
+import type { Settings } from './services/SettingsManager'
 import { useExtensionState } from './composables/useExtensionState'
 import { useHistory } from './composables/useHistory'
 import { TableSearch } from './components/table'
@@ -126,7 +127,7 @@ function initializeNavigation(): void {
   const navigationManager = new NavigationManager(
     document.body,
     (pageType: PageType) => {
-      SettingsManager.getSettings().then((settings: any) => {
+      SettingsManager.getSettings().then((settings: Settings) => {
         if (settings.extensionEnabled) {
           lifecycleManager.initialize(pageType, settings).catch((error) => {
             logger.error('Failed to initialize extension on navigation', error as Error)

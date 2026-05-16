@@ -1,7 +1,7 @@
 import BetterHasuraHistory from '@/contentScript/main'
 import { logger } from '@/contentScript/utils/logger'
 import { waitForElement } from '@/contentScript/utils/waitForElement'
-import { SettingsManager } from './SettingsManager'
+import { SettingsManager, type Settings } from './SettingsManager'
 import { createPageStrategy } from '@/contentScript/strategies'
 
 export class ExtensionLifecycleManager {
@@ -9,10 +9,7 @@ export class ExtensionLifecycleManager {
   private isInitialized = false
   private currentPageType: string = 'unknown'
 
-  async initialize(
-    pageType: string,
-    settings?: ReturnType<typeof SettingsManager.mergeSettings>,
-  ): Promise<void> {
+  async initialize(pageType: string, settings?: Settings): Promise<void> {
     const finalSettings = settings || (await SettingsManager.getSettings())
     this.currentPageType = pageType
 
@@ -74,7 +71,10 @@ export class ExtensionLifecycleManager {
     }
   }
 
-  async handleSettingsChange(oldSettings: any, newSettings: any): Promise<void> {
+  async handleSettingsChange(
+    oldSettings: Record<string, unknown> | undefined,
+    newSettings: Record<string, unknown> | undefined,
+  ): Promise<void> {
     const mergedOld = SettingsManager.mergeSettings(oldSettings)
     const mergedNew = SettingsManager.mergeSettings(newSettings)
 

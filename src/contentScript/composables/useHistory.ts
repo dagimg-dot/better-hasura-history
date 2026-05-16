@@ -64,39 +64,55 @@ export function useHistory() {
     return OPERATION_TYPES.QUERY
   }
 
-  const migrateLegacyEntry = (entry: any): HistoryItem | null => {
-    if (entry.operation_name && typeof entry.operation_name === 'string') {
-      let variables = {}
-      if (typeof entry.variables === 'string') {
+  const migrateLegacyEntry = (entry: unknown): HistoryItem | null => {
+    if (typeof entry !== 'object' || entry === null) return null
+
+    const e = entry as Record<string, unknown>
+
+    if (typeof e.operation_name === 'string') {
+      let variables: Record<string, any> = {}
+      if (typeof e.variables === 'string') {
         try {
-          variables = JSON.parse(entry.variables)
-        } catch (e) {
-          logger.warn('Failed to parse legacy variables', { error: e })
+          variables = JSON.parse(e.variables)
+        } catch (err) {
+          logger.warn('Failed to parse legacy variables', { error: err })
         }
-      } else if (typeof entry.variables === 'object') {
-        variables = entry.variables
+      } else if (typeof e.variables === 'object' && e.variables !== null) {
+        variables = e.variables as Record<string, any>
       }
 
       return {
-        id: entry.id || crypto.randomUUID(),
-        operationName: entry.operation_name,
-        variables: variables as Record<string, any>,
-        query: entry.operation || '',
-        timestamp: entry.createdAt ? new Date(entry.createdAt).getTime() : Date.now(),
-        operationType: determineOperationType(entry.operation || ''),
+        id: typeof e.id === 'string' ? e.id : crypto.randomUUID(),
+        operationName: e.operation_name,
+        variables,
+        query: typeof e.operation === 'string' ? e.operation : '',
+        timestamp: typeof e.createdAt === 'string' ? new Date(e.createdAt).getTime() : Date.now(),
+        operationType: determineOperationType(typeof e.operation === 'string' ? e.operation : ''),
       }
     }
 
-    if (entry.operationName && entry.query) {
-      if (!entry.operationType) {
-        entry.operationType = determineOperationType(entry.query)
+    if (typeof e.operationName === 'string' && typeof e.query === 'string') {
+      return {
+        id: typeof e.id === 'string' ? e.id : crypto.randomUUID(),
+        operationName: e.operationName,
+        query: e.query,
+        variables:
+          typeof e.variables === 'object' && e.variables !== null
+            ? (e.variables as Record<string, any>)
+            : undefined,
+        operationType:
+          typeof e.operationType === 'string' &&
+          ['query', 'mutation', 'subscription', 'sql'].includes(e.operationType)
+            ? (e.operationType as HistoryItem['operationType'])
+            : determineOperationType(e.query),
+        timestamp: typeof e.timestamp === 'number' ? e.timestamp : Date.now(),
       }
-      return entry as HistoryItem
     }
+
     return null
   }
 
-  const importHistory = (data: any[]) => {
+  const importHistory = (data: unknown[]) => {
     let importedCount = 0
     try {
       const newItems = [...historyItems.value]
