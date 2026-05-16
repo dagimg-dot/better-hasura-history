@@ -1,6 +1,7 @@
 <template>
   <BetterButton label="Better History" title="View API call history" :onClick="togglePane" />
   <BetterButton
+    v-if="pageType === 'graphiql'"
     :label="refreshLabel"
     title="Re-fetch GraphQL schema from the server"
     :onClick="refreshSchema"
@@ -12,7 +13,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useExtensionState } from '@/contentScript/composables/useExtensionState'
 import BetterButton from './BetterButton.vue'
 
-const { isPaneOpen } = useExtensionState()
+const { isPaneOpen, pageType } = useExtensionState()
 
 const togglePane = () => {
   isPaneOpen.value = !isPaneOpen.value
