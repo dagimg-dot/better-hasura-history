@@ -80,11 +80,7 @@ async function handleAuthenticate(sessionId: string) {
   updateSession(sessionId, { status: 'authenticating', error: undefined, token: undefined })
 
   try {
-    const { token } = await SessionAuthService.authenticate(
-      session.mutation,
-      session.variables,
-      session.token || undefined,
-    )
+    const { token } = await SessionAuthService.authenticate(session.mutation, session.variables)
     const updates: Record<string, any> = { status: 'success', token }
 
     if (session.roleNamePath) {

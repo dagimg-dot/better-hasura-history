@@ -122,7 +122,6 @@ export const SessionAuthService = {
   async authenticate(
     mutation: string,
     variables: Record<string, any>,
-    bearerToken?: string,
   ): Promise<{ token: string; rawData: Record<string, any> }> {
     const endpoint = getGraphQLEndpoint()
     if (!endpoint) {
@@ -130,12 +129,14 @@ export const SessionAuthService = {
     }
 
     const headers = readHeadersFromLS()
+    const authIdx = headers.findIndex((h) => h.key.toLowerCase() === 'authorization' && h.isActive)
+    if (authIdx >= 0) {
+      headers[authIdx] = { ...headers[authIdx], isActive: false }
+      writeHeadersToLS(headers)
+    }
+
     const reqHeaders = buildRequestHeaders(headers)
     reqHeaders['Content-Type'] = 'application/json'
-
-    if (bearerToken) {
-      reqHeaders['Authorization'] = `Bearer ${bearerToken}`
-    }
 
     logger.debug('SessionAuth: sending authentication mutation', {
       endpoint,
